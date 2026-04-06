@@ -1,8 +1,11 @@
 import React from 'react'
+import MuscleGroups from "@/components/muscle-groups/muscle-groups"
 
 const DashboardPage = () => {
   return (
-    <div>DashboardPage</div>
+    <div>
+      <MuscleGroups />
+    </div>
   )
 }
 
