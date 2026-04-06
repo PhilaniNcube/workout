@@ -20,16 +20,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       "https://workout-nine-mu.vercel.app",
     ],
     database: authComponent.adapter(ctx),
-    user: {
-      additionalFields: {
-        role: {
-          type: "string",
-          required: false,
-          input: false,
-          defaultValue: "user",
-        },
-      },
-    },
     // Configure simple, non-verified email/password to get started
     emailAndPassword: {
       enabled: true,
