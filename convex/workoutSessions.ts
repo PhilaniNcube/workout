@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { assertOwner, requireTokenIdentifier } from "./lib/authz";
 
@@ -34,6 +35,183 @@ export const listByDateRange = query({
 			)
 			.order("asc")
 			.collect();
+	},
+});
+
+export const suggestNextExercises = query({
+	args: { limit: v.optional(v.number()) },
+	handler: async (ctx, args) => {
+		const tokenIdentifier = await requireTokenIdentifier(ctx);
+		const limit = Math.min(Math.max(args.limit ?? 6, 1), 20);
+
+		const now = Date.now();
+		const twoDaysAgo = now - 2 * 24 * 60 * 60 * 1000;
+
+		const recentSessions = await ctx.db
+			.query("workoutSessions")
+			.withIndex("by_ownerTokenIdentifier_and_startedAt", (q) =>
+				q
+					.eq("ownerTokenIdentifier", tokenIdentifier)
+					.gte("startedAt", twoDaysAgo)
+					.lte("startedAt", now),
+			)
+			.order("desc")
+			.take(50);
+
+		const dayKeyFor = (timestamp: number) =>
+			new Date(timestamp).toISOString().slice(0, 10);
+
+		const recentDayKeys: string[] = [];
+		for (const session of recentSessions) {
+			const key = dayKeyFor(session.startedAt);
+			if (!recentDayKeys.includes(key)) {
+				recentDayKeys.push(key);
+			}
+		}
+
+		const mostRecentDay = recentDayKeys[0] ?? null;
+		const previousDay = recentDayKeys[1] ?? null;
+
+		const mostRecentDayMuscleGroups = new Set<string>();
+		const previousDayMuscleGroups = new Set<string>();
+		const recentMuscleGroups = new Set<string>();
+		const recentExerciseIds = new Set<string>();
+
+		const exerciseCache = new Map<string, Awaited<ReturnType<typeof ctx.db.get>>>();
+		for (const session of recentSessions) {
+			const entries = await ctx.db
+				.query("workoutSessionExercises")
+				.withIndex("by_ownerTokenIdentifier_and_workoutSessionId", (q) =>
+					q
+						.eq("ownerTokenIdentifier", tokenIdentifier)
+						.eq("workoutSessionId", session._id),
+				)
+				.take(100);
+
+			for (const entry of entries) {
+				recentExerciseIds.add(String(entry.exerciseId));
+
+				const exerciseKey = String(entry.exerciseId);
+				let exercise = exerciseCache.get(exerciseKey);
+				if (exercise === undefined) {
+					exercise = await ctx.db.get(entry.exerciseId);
+					exerciseCache.set(exerciseKey, exercise);
+				}
+				if (!exercise?.muscleGroup) {
+					continue;
+				}
+
+				const muscleGroupKey = String(exercise.muscleGroup);
+				recentMuscleGroups.add(muscleGroupKey);
+
+				const sessionDay = dayKeyFor(session.startedAt);
+				if (mostRecentDay && sessionDay === mostRecentDay) {
+					mostRecentDayMuscleGroups.add(muscleGroupKey);
+				}
+				if (previousDay && sessionDay === previousDay) {
+					previousDayMuscleGroups.add(muscleGroupKey);
+				}
+			}
+		}
+
+		const preferredMuscleGroups = new Set<string>();
+		for (const groupId of previousDayMuscleGroups) {
+			if (!mostRecentDayMuscleGroups.has(groupId)) {
+				preferredMuscleGroups.add(groupId);
+			}
+		}
+
+		if (preferredMuscleGroups.size === 0) {
+			for (const groupId of recentMuscleGroups) {
+				if (!mostRecentDayMuscleGroups.has(groupId)) {
+					preferredMuscleGroups.add(groupId);
+				}
+			}
+		}
+
+		const muscleGroupNameCache = new Map<string, string>();
+		const blockedMuscleGroupNames: string[] = [];
+		for (const groupId of mostRecentDayMuscleGroups) {
+			const group = await ctx.db.get(groupId as Id<"muscleGroups">);
+			if (group) {
+				muscleGroupNameCache.set(groupId, group.name);
+				blockedMuscleGroupNames.push(group.name);
+			}
+		}
+
+		const allExercises = await ctx.db
+			.query("exercises")
+			.withIndex("by_isArchived", (q) => q.eq("isArchived", false))
+			.take(500);
+
+		const candidates = allExercises
+			.filter((exercise) => {
+				if (!exercise.muscleGroup) {
+					return false;
+				}
+				const groupId = String(exercise.muscleGroup);
+				if (mostRecentDayMuscleGroups.has(groupId)) {
+					return false;
+				}
+				if (recentExerciseIds.has(String(exercise._id))) {
+					return false;
+				}
+				return true;
+			})
+			.map((exercise) => {
+				const groupId = String(exercise.muscleGroup);
+				let score = 0;
+				let reason = "Keeps recovery balanced across muscle groups.";
+
+				if (preferredMuscleGroups.has(groupId)) {
+					score += 5;
+					reason = "Targets a muscle group from your recent rotation without back-to-back overload.";
+				} else if (recentMuscleGroups.has(groupId)) {
+					score += 2;
+					reason = "Builds on your recent training pattern while avoiding consecutive-day repeats.";
+				}
+
+				return {
+					exercise,
+					score,
+					reason,
+				};
+			})
+			.sort((a, b) => {
+				if (b.score !== a.score) {
+					return b.score - a.score;
+				}
+				return a.exercise.name.localeCompare(b.exercise.name);
+			})
+			.slice(0, limit);
+
+		for (const candidate of candidates) {
+			const groupId = String(candidate.exercise.muscleGroup);
+			if (!muscleGroupNameCache.has(groupId)) {
+				const group = await ctx.db.get(candidate.exercise.muscleGroup as Id<"muscleGroups">);
+				if (group) {
+					muscleGroupNameCache.set(groupId, group.name);
+				}
+			}
+		}
+
+		return {
+			suggestedForDate: now,
+			basedOn: {
+				mostRecentWorkoutDay: mostRecentDay,
+				previousWorkoutDay: previousDay,
+			},
+			blockedMuscleGroups: blockedMuscleGroupNames,
+			recommendations: candidates.map((candidate) => {
+				const groupId = String(candidate.exercise.muscleGroup);
+				return {
+					exerciseId: candidate.exercise._id,
+					exerciseName: candidate.exercise.name,
+					muscleGroupName: muscleGroupNameCache.get(groupId) ?? "Unknown",
+					reason: candidate.reason,
+				};
+			}),
+		};
 	},
 });
 

@@ -1,10 +1,14 @@
-import React from 'react'
-import MuscleGroups from "@/components/muscle-groups/muscle-groups"
+import PersonalBestsByMuscleGroupCard from "@/components/dashboard/personal-bests-by-muscle-group-card"
+import SuggestedNextExercisesCard from "@/components/dashboard/suggested-next-exercises-card"
+import React from "react"
+
 
 const DashboardPage = () => {
   return (
-    <div>
-      <MuscleGroups />
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <SuggestedNextExercisesCard />
+      <PersonalBestsByMuscleGroupCard />
     </div>
   )
 }

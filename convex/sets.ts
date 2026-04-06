@@ -1,6 +1,10 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { assertOwner, requireTokenIdentifier } from "./lib/authz";
+import {
+	recomputeSetDerivedRecordsForExercise,
+	upsertSetDerivedRecords,
+} from "./personalRecords";
 
 const nullableNumber = v.optional(v.union(v.null(), v.number()));
 
@@ -25,7 +29,8 @@ export const add = mutation({
 		}
 		assertOwner(sessionExercise.ownerTokenIdentifier, tokenIdentifier);
 
-		return await ctx.db.insert("sets", {
+		const createdAt = Date.now();
+		const setId = await ctx.db.insert("sets", {
 			ownerTokenIdentifier: tokenIdentifier,
 			workoutSessionExerciseId: args.workoutSessionExerciseId,
 			setNumber: args.setNumber,
@@ -37,8 +42,19 @@ export const add = mutation({
 			rir: args.rir ?? null,
 			effortLevel: args.effortLevel ?? null,
 			isWarmup: args.isWarmup ?? false,
-			createdAt: Date.now(),
+			createdAt,
 		});
+
+		await upsertSetDerivedRecords(ctx, {
+			tokenIdentifier,
+			exerciseId: sessionExercise.exerciseId,
+			setId,
+			createdAt,
+			weight: args.weight ?? null,
+			reps: args.reps ?? null,
+		});
+
+		return setId;
 	},
 });
 
@@ -78,6 +94,15 @@ export const remove = mutation({
 			throw new Error("Set not found");
 		}
 		assertOwner(set.ownerTokenIdentifier, tokenIdentifier);
+		const sessionExercise = await ctx.db.get(set.workoutSessionExerciseId);
+		if (!sessionExercise) {
+			throw new Error("Workout session exercise not found");
+		}
 		await ctx.db.delete(args.setId);
+
+		await recomputeSetDerivedRecordsForExercise(ctx, {
+			tokenIdentifier,
+			exerciseId: sessionExercise.exerciseId,
+		});
 	},
 });

@@ -1,6 +1,10 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { assertOwner, requireTokenIdentifier } from "./lib/authz";
+import {
+	recomputeSetDerivedRecordsForExercise,
+	upsertSetDerivedRecords,
+} from "./personalRecords";
 
 const nullableString = v.optional(v.union(v.null(), v.string()));
 const nullableNumber = v.optional(v.union(v.null(), v.number()));
@@ -110,6 +114,7 @@ export const addWithSet = mutation({
 			)
 			.take(200);
 
+		const createdAt = Date.now();
 		const setId = await ctx.db.insert("sets", {
 			ownerTokenIdentifier: tokenIdentifier,
 			workoutSessionExerciseId: sessionExerciseId,
@@ -122,7 +127,16 @@ export const addWithSet = mutation({
 			rir: args.rir ?? null,
 			effortLevel: args.effortLevel ?? null,
 			isWarmup: args.isWarmup ?? false,
-			createdAt: Date.now(),
+			createdAt,
+		});
+
+		await upsertSetDerivedRecords(ctx, {
+			tokenIdentifier,
+			exerciseId: args.exerciseId,
+			setId,
+			createdAt,
+			weight: args.weight ?? null,
+			reps: args.reps ?? null,
 		});
 
 		return { sessionExerciseId, setId };
@@ -179,5 +193,10 @@ export const remove = mutation({
 		}
 
 		await ctx.db.delete(args.sessionExerciseId);
+
+		await recomputeSetDerivedRecordsForExercise(ctx, {
+			tokenIdentifier,
+			exerciseId: sessionExercise.exerciseId,
+		});
 	},
 });
