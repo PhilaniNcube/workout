@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { assertOwner, requireTokenIdentifier } from "./lib/authz";
@@ -171,7 +171,7 @@ export async function recomputeSetDerivedRecordsForExercise(
 			.take(200);
 
 		for (const set of sets) {
-			if (set.weight !== null) {
+			if (set.weight != null) {
 				if (
 					!bestWeight ||
 					set.weight > bestWeight.value ||
@@ -185,7 +185,7 @@ export async function recomputeSetDerivedRecordsForExercise(
 				}
 			}
 
-			if (set.reps !== null) {
+			if (set.reps != null) {
 				if (
 					!bestReps ||
 					set.reps > bestReps.value ||
@@ -259,8 +259,8 @@ export const listBestByMuscleGroup = query({
 			)
 			.take(recordLimit);
 
-		const exerciseCache = new Map<string, Awaited<ReturnType<typeof ctx.db.get>>>();
-		const muscleGroupCache = new Map<string, Awaited<ReturnType<typeof ctx.db.get>>>();
+		const exerciseCache = new Map<string, Doc<"exercises"> | null>();
+		const muscleGroupCache = new Map<string, Doc<"muscleGroups"> | null>();
 
 		type BestEntry = {
 			exerciseId: (typeof records)[number]["exerciseId"];

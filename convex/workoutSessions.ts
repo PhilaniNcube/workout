@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { assertOwner, requireTokenIdentifier } from "./lib/authz";
 
@@ -77,7 +77,7 @@ export const suggestNextExercises = query({
 		const recentMuscleGroups = new Set<string>();
 		const recentExerciseIds = new Set<string>();
 
-		const exerciseCache = new Map<string, Awaited<ReturnType<typeof ctx.db.get>>>();
+		const exerciseCache = new Map<string, Doc<"exercises"> | null>();
 		for (const session of recentSessions) {
 			const entries = await ctx.db
 				.query("workoutSessionExercises")
