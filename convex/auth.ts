@@ -15,6 +15,10 @@ export const authComponent = createClient<DataModel>(components.betterAuth);
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     baseURL: siteUrl,
+    trustedOrigins: [
+      siteUrl,
+      "https://workout-nine-mu.vercel.app",
+    ],
     database: authComponent.adapter(ctx),
     user: {
       additionalFields: {
