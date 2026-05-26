@@ -117,38 +117,87 @@ export const fetchGoogleHealthData = action({
 
     // 2. Fetch data from Google Health API endpoint
     try {
-      const response = await fetch("https://www.googleapis.com/health/v1/users/me/activities/steps/date/today.json", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const now = new Date();
+      const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
-      if (!response.ok) {
-        throw new Error(`Google Health API returned status ${response.status}`);
-      }
+      const startTime = today.toISOString();
+      const endTime = tomorrow.toISOString();
 
-      const data = await response.json();
-      const steps = parseInt(data["activities-steps"]?.[0]?.value ?? "0", 10);
-      
-      // Attempt to fetch resting heart rate
-      let heartRate = 72;
+      let steps = 0;
+      let fetchedStepsSuccessfully = false;
       try {
-        const hrResponse = await fetch("https://www.googleapis.com/health/v1/users/me/activities/heart/date/today.json", {
+        const response = await fetch("https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints:dailyRollUp", {
+          method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            range: {
+              startTime,
+              endTime,
+            },
+            windowSizeDays: 1,
+          }),
         });
+
+        if (response.ok) {
+          const data = await response.json();
+          const rollupPoints = data.dailyRollupDataPoints || data.dataPoints || [];
+          if (rollupPoints.length > 0) {
+            const point = rollupPoints[0];
+            const rawSteps = point.steps?.countSum ?? point.value?.steps?.countSum ?? "0";
+            steps = parseInt(rawSteps, 10);
+          }
+          fetchedStepsSuccessfully = true;
+        } else {
+          const errText = await response.text();
+          console.warn(`Steps API returned status ${response.status}: ${errText}`);
+        }
+      } catch (err: any) {
+        console.warn("Failed fetching steps from live Google Health API:", err.message);
+      }
+
+      let heartRate = 72;
+      let fetchedHRSuccessfully = false;
+      try {
+        const hrResponse = await fetch("https://health.googleapis.com/v4/users/me/dataTypes/heart-rate/dataPoints:dailyRollUp", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            range: {
+              startTime,
+              endTime,
+            },
+            windowSizeDays: 1,
+          }),
+        });
+
         if (hrResponse.ok) {
           const hrData = await hrResponse.json();
-          heartRate = parseInt(
-            hrData["activities-heart"]?.[0]?.value?.restingHeartRate ?? 
-            hrData["activities-heart-intraday"]?.[0]?.value ?? 
-            "72", 
-            10
-          );
+          const rollupPoints = hrData.dailyRollupDataPoints || hrData.dataPoints || [];
+          if (rollupPoints.length > 0) {
+            const point = rollupPoints[0];
+            const rollupVal = point.heartRateRollup ?? point.value?.heartRateRollup;
+            if (rollupVal) {
+              heartRate = Math.round(rollupVal.averageHeartRate ?? rollupVal.restingHeartRate ?? 72);
+              fetchedHRSuccessfully = true;
+            }
+          }
+        } else {
+          const errText = await hrResponse.text();
+          console.warn(`Heart rate API returned status ${hrResponse.status}: ${errText}`);
         }
-      } catch (hrErr) {
-        console.warn("Could not fetch heart rate from API, using default:", hrErr);
+      } catch (hrErr: any) {
+        console.warn("Could not fetch heart rate from API:", hrErr.message);
+      }
+
+      if (!fetchedStepsSuccessfully && !fetchedHRSuccessfully) {
+        throw new Error("Could not fetch any data from the live Google Health API");
       }
 
       return {
