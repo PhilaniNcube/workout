@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { z } from "zod"
 
+import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -76,25 +77,16 @@ export function SignInForm({ ...props }: React.ComponentProps<typeof Card>) {
     setState((prev) => ({ ...prev, fieldErrors: {}, message: null }))
 
     try {
-      const response = await fetch("/api/auth/sign-in/email", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(parsed.data),
+      const { error } = await authClient.signIn.email({
+        email: parsed.data.email,
+        password: parsed.data.password,
       })
 
-      const payload = await response.json().catch(() => null)
-      if (!response.ok) {
-        const message =
-          (payload && typeof payload === "object" && "message" in payload
-            ? String(payload.message)
-            : null) ?? "Authentication failed."
-
+      if (error) {
         setState({
           fields: values,
           fieldErrors: {},
-          message,
+          message: error.message ?? "Authentication failed.",
         })
         return
       }

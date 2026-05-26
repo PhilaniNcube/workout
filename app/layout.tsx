@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 import { ConvexClientProvider } from "./ConvexClientProvider"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { getToken } from "@/lib/auth-server"
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -16,11 +17,13 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
 })
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const initialToken = await getToken()
+
   return (
     <html
       lang="en"
@@ -33,7 +36,7 @@ export default function RootLayout({
       )}
     >
       <body>
-        <ConvexClientProvider>
+        <ConvexClientProvider initialToken={initialToken}>
           <ThemeProvider>
             <TooltipProvider>{children}</TooltipProvider>
           </ThemeProvider>
