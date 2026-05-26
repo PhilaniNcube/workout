@@ -1,4 +1,4 @@
-import { action, internalMutation, internalQuery } from "./_generated/server";
+import { action, internalMutation, internalQuery, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { components } from "./_generated/api";
 import { internal } from "./_generated/api";
@@ -231,5 +231,32 @@ export const fetchGoogleHealthData = action({
         warning: "Showing demo/sandbox health data (Google API mock fallback)",
       };
     }
+  },
+});
+
+/**
+ * Public mutation to clear/unlink the user's Google account to allow re-authenticating with new scopes.
+ */
+export const unlinkGoogleAccount = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await authComponent.getAuthUser(ctx);
+    const account = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+      model: "account",
+      where: [
+        { field: "userId", value: user._id },
+        { field: "providerId", value: "google" },
+      ],
+    });
+    if (account) {
+      await ctx.runMutation(components.betterAuth.adapter.deleteOne, {
+        input: {
+          model: "account",
+          where: [{ field: "_id", value: account._id }],
+        },
+      });
+      return { success: true };
+    }
+    return { success: false, message: "No Google account linked" };
   },
 });
