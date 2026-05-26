@@ -211,6 +211,8 @@ export const fetchGoogleHealthData = action({
         throw new Error("Could not fetch any data from the live Google Health API");
       }
 
+      console.log(`Google Health API fetch success. Steps: ${steps}, Heart Rate: ${heartRate}`);
+
       return {
         status: "success",
         steps,
