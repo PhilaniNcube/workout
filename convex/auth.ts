@@ -33,7 +33,8 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
           "openid",
           "profile",
           "email",
-          "https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly"
+          "https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly",
+          "https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly"
         ],
         accessType: "offline",
         prompt: "consent",
