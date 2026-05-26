@@ -118,11 +118,22 @@ export const fetchGoogleHealthData = action({
     // 2. Fetch data from Google Health API endpoint
     try {
       const now = new Date();
-      const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-      const startTime = today.toISOString();
-      const endTime = tomorrow.toISOString();
+      const start = {
+        date: {
+          year: now.getUTCFullYear(),
+          month: now.getUTCMonth() + 1,
+          day: now.getUTCDate(),
+        },
+      };
+      const end = {
+        date: {
+          year: tomorrow.getUTCFullYear(),
+          month: tomorrow.getUTCMonth() + 1,
+          day: tomorrow.getUTCDate(),
+        },
+      };
 
       let steps = 0;
       let fetchedStepsSuccessfully = false;
@@ -135,8 +146,8 @@ export const fetchGoogleHealthData = action({
           },
           body: JSON.stringify({
             range: {
-              startTime,
-              endTime,
+              start,
+              end,
             },
             windowSizeDays: 1,
           }),
@@ -170,8 +181,8 @@ export const fetchGoogleHealthData = action({
           },
           body: JSON.stringify({
             range: {
-              startTime,
-              endTime,
+              start,
+              end,
             },
             windowSizeDays: 1,
           }),
