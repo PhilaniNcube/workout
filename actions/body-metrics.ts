@@ -8,6 +8,7 @@ export async function logBodyMetricAction(formData: FormData) {
 	const recordedAt = formData.get("recordedAt");
 	const bodyWeight = formData.get("bodyWeight");
 	const bodyFatPercent = formData.get("bodyFatPercent");
+	const heightCm = formData.get("heightCm");
 	const waistCm = formData.get("waistCm");
 	const chestCm = formData.get("chestCm");
 	const notes = formData.get("notes");
@@ -17,6 +18,7 @@ export async function logBodyMetricAction(formData: FormData) {
 			recordedAt: recordedAt && String(recordedAt) !== "" ? Number(recordedAt) : undefined,
 			bodyWeight: bodyWeight && String(bodyWeight) !== "" ? Number(bodyWeight) : null,
 			bodyFatPercent: bodyFatPercent && String(bodyFatPercent) !== "" ? Number(bodyFatPercent) : null,
+			heightCm: heightCm && String(heightCm) !== "" ? Number(heightCm) : null,
 			waistCm: waistCm && String(waistCm) !== "" ? Number(waistCm) : null,
 			chestCm: chestCm && String(chestCm) !== "" ? Number(chestCm) : null,
 			notes: notes && String(notes) !== "" ? String(notes) : null,

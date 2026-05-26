@@ -65,6 +65,7 @@ export default defineSchema({
 		recordedAt: v.number(),
 		bodyWeight: v.optional(v.union(v.null(), v.number())),
 		bodyFatPercent: v.optional(v.union(v.null(), v.number())),
+		heightCm: v.optional(v.union(v.null(), v.number())),
 		waistCm: v.optional(v.union(v.null(), v.number())),
 		chestCm: v.optional(v.union(v.null(), v.number())),
 		notes: v.optional(v.union(v.null(), v.string())),

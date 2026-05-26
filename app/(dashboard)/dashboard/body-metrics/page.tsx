@@ -33,6 +33,7 @@ const logSchema = z.object({
   recordedAt: z.string().optional(),
   bodyWeight: z.string().optional(),
   bodyFatPercent: z.string().optional(),
+  heightCm: z.string().optional(),
   waistCm: z.string().optional(),
   chestCm: z.string().optional(),
   notes: z.string().trim().max(500).optional(),
@@ -98,6 +99,7 @@ export default function BodyMetricsPage() {
       recordedAt: "",
       bodyWeight: "",
       bodyFatPercent: "",
+      heightCm: "",
       waistCm: "",
       chestCm: "",
       notes: "",
@@ -109,6 +111,7 @@ export default function BodyMetricsPage() {
     if (data.recordedAt) formData.set("recordedAt", String(new Date(data.recordedAt).getTime()));
     if (data.bodyWeight) formData.set("bodyWeight", data.bodyWeight);
     if (data.bodyFatPercent) formData.set("bodyFatPercent", data.bodyFatPercent);
+    if (data.heightCm) formData.set("heightCm", data.heightCm);
     if (data.waistCm) formData.set("waistCm", data.waistCm);
     if (data.chestCm) formData.set("chestCm", data.chestCm);
     if (data.notes) formData.set("notes", data.notes);
@@ -127,6 +130,25 @@ export default function BodyMetricsPage() {
 
   const latest = sortedMetrics?.[0] ?? null;
   const previous = sortedMetrics?.[1] ?? null;
+
+  const latestHeightEntry = sortedMetrics?.find((m) => m.heightCm != null) ?? null;
+  const hasBmi =
+    latest?.bodyWeight != null && latestHeightEntry?.heightCm != null;
+  const bmi = hasBmi
+    ? (
+        latest!.bodyWeight! /
+        Math.pow(latestHeightEntry!.heightCm! / 100, 2)
+      ).toFixed(1)
+    : null;
+
+  const bmiCategory = (() => {
+    if (!bmi) return null;
+    const v = Number(bmi);
+    if (v < 18.5) return { label: "Underweight", color: "text-blue-500" };
+    if (v < 25) return { label: "Normal", color: "text-green-600" };
+    if (v < 30) return { label: "Overweight", color: "text-amber-500" };
+    return { label: "Obese", color: "text-red-500" };
+  })();
 
   return (
     <div className="flex flex-col gap-6">
@@ -181,6 +203,18 @@ export default function BodyMetricsPage() {
                     />
                   </Field>
                 </div>
+                <Field>
+                  <FieldLabel htmlFor="bm-height">Height (cm)</FieldLabel>
+                  <Input
+                    id="bm-height"
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    max={300}
+                    placeholder="e.g. 175"
+                    {...register("heightCm")}
+                  />
+                </Field>
                 <div className="grid grid-cols-2 gap-3">
                   <Field>
                     <FieldLabel htmlFor="bm-waist">Waist (cm)</FieldLabel>
@@ -271,6 +305,34 @@ export default function BodyMetricsPage() {
         </Card>
       )}
 
+      {bmi && latestHeightEntry && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">BMI</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div>
+                <p className="text-3xl font-bold">{bmi}</p>
+                {bmiCategory && (
+                  <p className={`text-sm font-medium ${bmiCategory.color}`}>
+                    {bmiCategory.label}
+                  </p>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                <p>
+                  Weight: {latest?.bodyWeight} kg
+                </p>
+                <p>
+                  Height: {latestHeightEntry.heightCm} cm
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Measurement History</CardTitle>
@@ -295,6 +357,8 @@ export default function BodyMetricsPage() {
                     <th className="py-2 pr-3">Date</th>
                     <th className="py-2 pr-3">Weight (kg)</th>
                     <th className="py-2 pr-3">BF%</th>
+                    <th className="py-2 pr-3">Height (cm)</th>
+                    <th className="py-2 pr-3">BMI</th>
                     <th className="py-2 pr-3">Waist (cm)</th>
                     <th className="py-2 pr-3">Chest (cm)</th>
                     <th className="py-2 pr-3">Notes</th>
@@ -312,6 +376,17 @@ export default function BodyMetricsPage() {
                       </td>
                       <td className="py-2 pr-3">
                         {m.bodyFatPercent != null ? `${m.bodyFatPercent}%` : "–"}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {m.heightCm != null ? m.heightCm : "–"}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {m.bodyWeight != null && m.heightCm != null
+                          ? (
+                              m.bodyWeight /
+                              Math.pow(m.heightCm / 100, 2)
+                            ).toFixed(1)
+                          : "–"}
                       </td>
                       <td className="py-2 pr-3">
                         {m.waistCm != null ? m.waistCm : "–"}
