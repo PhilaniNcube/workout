@@ -16,9 +16,12 @@ import type * as http from "../http.js";
 import type * as lib_authz from "../lib/authz.js";
 import type * as muscleGroups from "../muscleGroups.js";
 import type * as personalRecords from "../personalRecords.js";
+import type * as search from "../search.js";
 import type * as sets from "../sets.js";
+import type * as stats from "../stats.js";
 import type * as workoutSessionExercises from "../workoutSessionExercises.js";
 import type * as workoutSessions from "../workoutSessions.js";
+import type * as workoutTemplates from "../workoutTemplates.js";
 
 import type {
   ApiFromModules,
@@ -35,9 +38,12 @@ declare const fullApi: ApiFromModules<{
   "lib/authz": typeof lib_authz;
   muscleGroups: typeof muscleGroups;
   personalRecords: typeof personalRecords;
+  search: typeof search;
   sets: typeof sets;
+  stats: typeof stats;
   workoutSessionExercises: typeof workoutSessionExercises;
   workoutSessions: typeof workoutSessions;
+  workoutTemplates: typeof workoutTemplates;
 }>;
 
 /**

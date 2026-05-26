@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requireTokenIdentifier } from "./lib/authz";
 
@@ -115,5 +115,54 @@ export const archive = mutation({
 			updatedAt: Date.now(),
 		});
 		return args.exerciseId;
+	},
+});
+
+export const getHistory = query({
+	args: {
+		exerciseId: v.id("exercises"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const tokenIdentifier = await requireTokenIdentifier(ctx);
+		const limit = Math.min(Math.max(args.limit ?? 30, 1), 100);
+
+		const sessionExerciseRows = await ctx.db
+			.query("workoutSessionExercises")
+			.withIndex("by_ownerTokenIdentifier_and_exerciseId", (q) =>
+				q
+					.eq("ownerTokenIdentifier", tokenIdentifier)
+					.eq("exerciseId", args.exerciseId),
+			)
+			.order("desc")
+			.take(limit);
+
+		const results: {
+			sessionExercise: Doc<"workoutSessionExercises">;
+			session: Doc<"workoutSessions">;
+			sets: Doc<"sets">[];
+		}[] = [];
+
+		for (const se of sessionExerciseRows) {
+			const session = await ctx.db.get(se.workoutSessionId);
+			if (!session) continue;
+
+			const sets = await ctx.db
+				.query("sets")
+				.withIndex("by_ownerTokenIdentifier_and_workoutSessionExerciseId", (q) =>
+					q
+						.eq("ownerTokenIdentifier", tokenIdentifier)
+						.eq("workoutSessionExerciseId", se._id),
+				)
+				.take(50);
+
+			results.push({
+				sessionExercise: se,
+				session,
+				sets,
+			});
+		}
+
+		return results;
 	},
 });

@@ -81,3 +81,18 @@ export const updateStatus = mutation({
 		return args.goalId;
 	},
 });
+
+export const remove = mutation({
+	args: {
+		goalId: v.id("goals"),
+	},
+	handler: async (ctx, args) => {
+		const tokenIdentifier = await requireTokenIdentifier(ctx);
+		const goal = await ctx.db.get(args.goalId);
+		if (!goal) {
+			throw new Error("Goal not found");
+		}
+		assertOwner(goal.ownerTokenIdentifier, tokenIdentifier);
+		await ctx.db.delete(args.goalId);
+	},
+});

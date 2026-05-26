@@ -342,6 +342,22 @@ export const listBestByMuscleGroup = query({
 	},
 });
 
+export const listAll = query({
+	args: {
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const tokenIdentifier = await requireTokenIdentifier(ctx);
+		const limit = Math.min(Math.max(args.limit ?? 200, 1), 500);
+		return await ctx.db
+			.query("personalRecords")
+			.withIndex("by_ownerTokenIdentifier_and_exerciseId_and_recordType", (q) =>
+				q.eq("ownerTokenIdentifier", tokenIdentifier),
+			)
+			.take(limit);
+	},
+});
+
 export const upsert = mutation({
 	args: {
 		exerciseId: v.id("exercises"),

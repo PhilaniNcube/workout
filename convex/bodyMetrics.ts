@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireTokenIdentifier } from "./lib/authz";
+import { assertOwner, requireTokenIdentifier } from "./lib/authz";
 
 const nullableNumber = v.optional(v.union(v.null(), v.number()));
 const nullableString = v.optional(v.union(v.null(), v.string()));
@@ -42,5 +42,20 @@ export const log = mutation({
 			notes: args.notes ?? null,
 			createdAt: now,
 		});
+	},
+});
+
+export const remove = mutation({
+	args: {
+		metricId: v.id("bodyMetrics"),
+	},
+	handler: async (ctx, args) => {
+		const tokenIdentifier = await requireTokenIdentifier(ctx);
+		const metric = await ctx.db.get(args.metricId);
+		if (!metric) {
+			throw new Error("Body metric not found");
+		}
+		assertOwner(metric.ownerTokenIdentifier, tokenIdentifier);
+		await ctx.db.delete(args.metricId);
 	},
 });

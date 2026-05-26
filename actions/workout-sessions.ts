@@ -195,3 +195,20 @@ export async function deleteSessionExerciseAction(
 		return { success: false, message: getErrorMessage(error) };
 	}
 }
+
+export async function finishSessionAction(
+	sessionId: Id<"workoutSessions">,
+	notes?: string | null,
+	perceivedEffort?: number | null,
+): Promise<DeleteResult> {
+	try {
+		await fetchAuthMutation(api.workoutSessions.finish, {
+			sessionId,
+			...(notes !== undefined ? { notes } : {}),
+			...(perceivedEffort !== undefined ? { perceivedEffort } : {}),
+		});
+		return { success: true };
+	} catch (error) {
+		return { success: false, message: getErrorMessage(error) };
+	}
+}

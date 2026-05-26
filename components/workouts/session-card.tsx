@@ -1,14 +1,30 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState, useEffect, useRef, useTransition } from "react";
 import { useQuery } from "convex/react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Check, ChevronDown, ChevronsUpDown, Dumbbell, Plus, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronsUpDown,
+  Dumbbell,
+  Plus,
+  Trash2,
+  Timer,
+  Flag,
+} from "lucide-react";
 
-import { addExerciseWithSetAction, addSetAction, deleteSetAction, deleteSessionExerciseAction } from "@/actions/workout-sessions";
+import {
+  addExerciseWithSetAction,
+  addSetAction,
+  deleteSetAction,
+  deleteSessionExerciseAction,
+  finishSessionAction,
+} from "@/actions/workout-sessions";
+import { saveTemplateFromSessionAction } from "@/actions/templates";
 import { api } from "@/convex/_generated/api";
 import type { Id, Doc } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -46,6 +62,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +86,10 @@ const addExerciseSchema = z.object({
     .optional()
     .transform((val) => (val && val !== "" ? Number(val) : undefined))
     .pipe(z.number().int().min(1, "Min 1").max(10, "Max 10").optional()),
+  durationSeconds: z.string().optional(),
+  distance: z.string().optional(),
+  rir: z.string().optional(),
+  isWarmup: z.boolean().optional(),
   notes: z
     .string()
     .trim()
@@ -80,6 +102,10 @@ const addExerciseFormSchema = z.object({
   reps: z.string().optional(),
   weight: z.string().optional(),
   effortLevel: z.string().optional(),
+  durationSeconds: z.string().optional(),
+  distance: z.string().optional(),
+  rir: z.string().optional(),
+  isWarmup: z.boolean().optional(),
   notes: z.string().trim().max(500, "Notes must be 500 characters or fewer").optional(),
 });
 
@@ -105,6 +131,10 @@ async function submitAddExercise(
     reps: String(formData.get("reps") ?? ""),
     weight: String(formData.get("weight") ?? ""),
     effortLevel: String(formData.get("effortLevel") ?? ""),
+    durationSeconds: String(formData.get("durationSeconds") ?? ""),
+    distance: String(formData.get("distance") ?? ""),
+    rir: String(formData.get("rir") ?? ""),
+    isWarmup: formData.get("isWarmup") === "on",
     notes: String(formData.get("notes") ?? ""),
   };
 
@@ -130,6 +160,10 @@ async function submitAddExercise(
       reps: parsed.data.reps ?? null,
       weight: parsed.data.weight ?? null,
       effortLevel: parsed.data.effortLevel ?? null,
+      durationSeconds: parsed.data.durationSeconds ? Number(parsed.data.durationSeconds) : null,
+      distance: parsed.data.distance ? Number(parsed.data.distance) : null,
+      rir: parsed.data.rir ? Number(parsed.data.rir) : null,
+      isWarmup: parsed.data.isWarmup,
     },
     notes,
   );
@@ -144,7 +178,10 @@ async function submitAddExercise(
 export default function SessionCard({ session }: { session: WorkoutSession }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedExerciseId, setExpandedExerciseId] = useState<Id<"workoutSessionExercises"> | null>(null);
+  const [isFinishing, startFinishTransition] = useTransition();
   const isMobile = useIsMobile();
+
+  const isFinished = session.endedAt != null;
 
   const sessionExercises = useQuery(
     api.workoutSessionExercises.listForSession,
@@ -218,6 +255,10 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
       reps: "",
       weight: "",
       effortLevel: "",
+      durationSeconds: "",
+      distance: "",
+      rir: "",
+      isWarmup: false,
       notes: "",
     },
   });
@@ -228,6 +269,10 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
       reps: String(formData.get("reps") ?? ""),
       weight: String(formData.get("weight") ?? ""),
       effortLevel: String(formData.get("effortLevel") ?? ""),
+      durationSeconds: String(formData.get("durationSeconds") ?? ""),
+      distance: String(formData.get("distance") ?? ""),
+      rir: String(formData.get("rir") ?? ""),
+      isWarmup: formData.get("isWarmup") === "on",
       notes: String(formData.get("notes") ?? ""),
     });
 
@@ -260,11 +305,21 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
       <SheetTrigger asChild>
         <button
           type="button"
-          className="bg-primary/10 text-primary w-full rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-primary/20"
+          className={cn(
+            "w-full rounded-md px-2 py-1 text-left text-xs transition-colors",
+            isFinished
+              ? "bg-muted/40 text-muted-foreground hover:bg-muted/60"
+              : "bg-primary/10 text-primary hover:bg-primary/20",
+          )}
         >
           <span className="font-medium">
             {format(new Date(session.startedAt), "h:mm a")}
           </span>
+          {isFinished && (
+            <span className="ml-1 text-[9px] text-green-600 font-medium">
+              Done
+            </span>
+          )}
           {sessionExercises && sessionExercises.length > 0 && (
             <div className="mt-0.5 space-y-0.5">
               {sessionExercises.map((se) => {
@@ -286,28 +341,64 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
       </SheetTrigger>
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>
-            Session – {format(new Date(session.startedAt), "MMM d, h:mm a")}
-          </SheetTitle>
-          <SheetDescription>
-            {session.notes ?? "No notes for this session."}
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="space-y-4 px-4">
-          {/* Session exercises list */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">Exercises</h4>
+          <div className="flex items-start justify-between">
+            <div>
+              <SheetTitle>
+                Session – {format(new Date(session.startedAt), "MMM d, h:mm a")}
+                {isFinished && (
+                  <span className="ml-2 inline-flex items-center rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                    Finished {session.endedAt ? format(new Date(session.endedAt), "h:mm a") : ""}
+                  </span>
+                )}
+              </SheetTitle>
+              <SheetDescription>
+                {session.notes ?? "No notes for this session."}
+              </SheetDescription>
+              {session.perceivedEffort != null && (
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Perceived effort: {session.perceivedEffort}/10
+                </p>
+              )}
+            </div>
+            {!isFinished && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setShowAddForm((prev) => !prev)}
+                className="shrink-0"
+                disabled={isFinishing}
+                onClick={() => {
+                  startFinishTransition(async () => {
+                    await finishSessionAction(session._id);
+                  });
+                }}
               >
-                <Plus className="mr-1 h-3 w-3" />
-                Add
+                <Flag className="mr-1 h-3.5 w-3.5" />
+                {isFinishing ? "Ending..." : "End Workout"}
               </Button>
+            )}
+          </div>
+        </SheetHeader>
+
+        {isFinished && sessionExercises && sessionExercises.length > 0 && (
+          <SaveTemplateForm sessionId={session._id} />
+        )}
+
+        <div className="space-y-4 px-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Exercises</h4>
+              {!isFinished && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddForm((prev) => !prev)}
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Add
+                </Button>
+              )}
             </div>
 
             {sessionExercises === undefined ? (
@@ -328,6 +419,7 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                       exerciseName={exercise?.name ?? "Unknown exercise"}
                       index={index}
                       isExpanded={isExpanded}
+                      isSessionFinished={isFinished}
                       onToggle={() =>
                         setExpandedExerciseId(isExpanded ? null : se._id)
                       }
@@ -338,8 +430,7 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
             )}
           </div>
 
-          {/* Add exercise form */}
-          {showAddForm && (
+          {showAddForm && !isFinished && (
             <form
               action={submitAction}
               noValidate
@@ -368,7 +459,7 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                   <FieldError>{errors.exerciseId?.message}</FieldError>
                 </Field>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <Field>
                     <FieldLabel htmlFor="session-exercise-reps">Reps</FieldLabel>
                     <Input
@@ -399,24 +490,84 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                     />
                     <FieldError>{errors.weight?.message}</FieldError>
                   </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="session-exercise-effort">
+                      Effort (1–10)
+                    </FieldLabel>
+                    <Input
+                      id="session-exercise-effort"
+                      type="number"
+                      min={1}
+                      max={10}
+                      placeholder="e.g. 7"
+                      aria-invalid={errors.effortLevel ? true : undefined}
+                      disabled={isPending}
+                      {...register("effortLevel")}
+                    />
+                    <FieldError>{errors.effortLevel?.message}</FieldError>
+                  </Field>
                 </div>
 
-                <Field>
-                  <FieldLabel htmlFor="session-exercise-effort">
-                    Effort (1–10)
-                  </FieldLabel>
-                  <Input
-                    id="session-exercise-effort"
-                    type="number"
-                    min={1}
-                    max={10}
-                    placeholder="e.g. 7"
-                    aria-invalid={errors.effortLevel ? true : undefined}
-                    disabled={isPending}
-                    {...register("effortLevel")}
+                <div className="grid grid-cols-3 gap-2">
+                  <Field>
+                    <FieldLabel htmlFor="session-exercise-dur">Duration (s)</FieldLabel>
+                    <Input
+                      id="session-exercise-dur"
+                      type="number"
+                      min={0}
+                      placeholder="e.g. 60"
+                      disabled={isPending}
+                      {...register("durationSeconds")}
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="session-exercise-dist">Distance</FieldLabel>
+                    <Input
+                      id="session-exercise-dist"
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      placeholder="e.g. 5.0"
+                      disabled={isPending}
+                      {...register("distance")}
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="session-exercise-rir">RIR</FieldLabel>
+                    <Input
+                      id="session-exercise-rir"
+                      type="number"
+                      min={0}
+                      max={20}
+                      placeholder="e.g. 2"
+                      disabled={isPending}
+                      {...register("rir")}
+                    />
+                  </Field>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Controller
+                    name="isWarmup"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="session-exercise-warmup"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isPending}
+                        />
+                        <Label htmlFor="session-exercise-warmup" className="text-sm cursor-pointer">
+                          Warmup set
+                        </Label>
+                      </div>
+                    )}
                   />
-                  <FieldError>{errors.effortLevel?.message}</FieldError>
-                </Field>
+                </div>
 
                 <Field>
                   <FieldLabel htmlFor="session-exercise-notes">
@@ -462,6 +613,70 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
   );
 }
 
+/* ── Rest Timer Component ── */
+
+function RestTimer({ restSeconds }: { restSeconds: number }) {
+  const [remaining, setRemaining] = useState(restSeconds);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    if (restSeconds <= 0) return;
+
+    intervalRef.current = setInterval(() => {
+      setRemaining((prev) => {
+        if (prev <= 1) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [restSeconds]);
+
+  if (restSeconds <= 0) return null;
+
+  const progress = remaining / restSeconds;
+  const minutes = Math.floor(remaining / 60);
+  const seconds = remaining % 60;
+  const displayTime = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const isComplete = remaining === 0;
+
+  return (
+    <div className={cn(
+      "rounded-md p-2 text-center transition-colors",
+      isComplete ? "bg-green-100 dark:bg-green-900/20" : "bg-primary/5",
+    )}>
+      <div className="flex items-center justify-center gap-1.5">
+        <Timer className={cn(
+          "h-3.5 w-3.5",
+          isComplete ? "text-green-600" : "text-primary",
+        )} />
+        <span className={cn(
+          "text-xs font-medium tabular-nums",
+          isComplete ? "text-green-600" : "text-primary",
+        )}>
+          {isComplete ? "Rest Complete!" : `Rest: ${displayTime}`}
+        </span>
+      </div>
+      <div className="mt-1 h-1 w-full rounded-full bg-muted overflow-hidden">
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width] duration-1000 ease-linear",
+            isComplete ? "bg-green-500" : "bg-primary",
+          )}
+          style={{ width: `${100 - progress * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 /* ── Session Exercise Item (expandable with sets) ── */
 
 const addSetSchema = z.object({
@@ -480,12 +695,22 @@ const addSetSchema = z.object({
     .optional()
     .transform((val) => (val && val !== "" ? Number(val) : undefined))
     .pipe(z.number().int().min(1, "Min 1").max(10, "Max 10").optional()),
+  durationSeconds: z.string().optional(),
+  distance: z.string().optional(),
+  rir: z.string().optional(),
+  restSeconds: z.string().optional(),
+  isWarmup: z.boolean().optional(),
 });
 
 const addSetFormSchema = z.object({
   reps: z.string().optional(),
   weight: z.string().optional(),
   effortLevel: z.string().optional(),
+  durationSeconds: z.string().optional(),
+  distance: z.string().optional(),
+  rir: z.string().optional(),
+  restSeconds: z.string().optional(),
+  isWarmup: z.boolean().optional(),
 });
 
 type AddSetFormValues = z.infer<typeof addSetFormSchema>;
@@ -503,11 +728,17 @@ async function submitAddSet(
   _prev: AddSetState,
   formData: FormData,
 ): Promise<AddSetState> {
-  const parsed = addSetSchema.safeParse({
+  const values = {
     reps: String(formData.get("reps") ?? ""),
     weight: String(formData.get("weight") ?? ""),
     effortLevel: String(formData.get("effortLevel") ?? ""),
-  });
+    durationSeconds: String(formData.get("durationSeconds") ?? ""),
+    distance: String(formData.get("distance") ?? ""),
+    rir: String(formData.get("rir") ?? ""),
+    restSeconds: String(formData.get("restSeconds") ?? ""),
+    isWarmup: formData.get("isWarmup") === "on",
+  };
+  const parsed = addSetSchema.safeParse(values);
 
   if (!parsed.success) {
     const fe = parsed.error.flatten().fieldErrors;
@@ -521,6 +752,10 @@ async function submitAddSet(
     reps: parsed.data.reps ?? null,
     weight: parsed.data.weight ?? null,
     effortLevel: parsed.data.effortLevel ?? null,
+    durationSeconds: parsed.data.durationSeconds ? Number(parsed.data.durationSeconds) : null,
+    distance: parsed.data.distance ? Number(parsed.data.distance) : null,
+    rir: parsed.data.rir ? Number(parsed.data.rir) : null,
+    isWarmup: parsed.data.isWarmup,
   });
 
   if (!result.success) return { success: false, message: result.message };
@@ -532,16 +767,19 @@ function SessionExerciseItem({
   exerciseName,
   index,
   isExpanded,
+  isSessionFinished,
   onToggle,
 }: {
   sessionExercise: Doc<"workoutSessionExercises">;
   exerciseName: string;
   index: number;
   isExpanded: boolean;
+  isSessionFinished: boolean;
   onToggle: () => void;
 }) {
   const [showAddSet, setShowAddSet] = useState(false);
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [timerRest, setTimerRest] = useState<number>(0);
 
   const sets = useQuery(
     api.sets.listForSessionExercise,
@@ -558,7 +796,13 @@ function SessionExerciseItem({
       prev,
       formData,
     );
-    if (result.success) setShowAddSet(false);
+    if (result.success) {
+      setShowAddSet(false);
+      const restVal = formData.get("restSeconds");
+      if (restVal && String(restVal) !== "") {
+        setTimerRest(Number(restVal));
+      }
+    }
     return result;
   };
 
@@ -574,15 +818,25 @@ function SessionExerciseItem({
     formState: { errors: setErrors },
   } = useForm<AddSetFormValues>({
     resolver: zodResolver(addSetFormSchema),
-    defaultValues: { reps: "", weight: "", effortLevel: "" },
+    defaultValues: {
+      reps: "", weight: "", effortLevel: "",
+      durationSeconds: "", distance: "", rir: "", restSeconds: "",
+      isWarmup: false,
+    },
   });
 
   const submitSetAction = async (formData: FormData) => {
-    const parsed = addSetSchema.safeParse({
+    const values = {
       reps: String(formData.get("reps") ?? ""),
       weight: String(formData.get("weight") ?? ""),
       effortLevel: String(formData.get("effortLevel") ?? ""),
-    });
+      durationSeconds: String(formData.get("durationSeconds") ?? ""),
+      distance: String(formData.get("distance") ?? ""),
+      rir: String(formData.get("rir") ?? ""),
+      restSeconds: String(formData.get("restSeconds") ?? ""),
+      isWarmup: formData.get("isWarmup") === "on",
+    };
+    const parsed = addSetSchema.safeParse(values);
     if (!parsed.success) {
       const fe = parsed.error.flatten().fieldErrors;
       if (fe.reps?.[0])
@@ -596,6 +850,14 @@ function SessionExerciseItem({
     clearSetErrors();
     setFormAction(formData);
   };
+
+  const hasExtraFields = sets?.some(
+    (s) =>
+      s.durationSeconds != null ||
+      s.distance != null ||
+      s.rir != null ||
+      s.isWarmup,
+  );
 
   return (
     <div className="rounded-md border">
@@ -616,19 +878,21 @@ function SessionExerciseItem({
         <span className="text-muted-foreground text-xs">
           #{index + 1}
         </span>
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-destructive rounded p-0.5 transition-colors"
-          disabled={isDeleting}
-          onClick={(e) => {
-            e.stopPropagation();
-            startDeleteTransition(async () => {
-              await deleteSessionExerciseAction(sessionExercise._id);
-            });
-          }}
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
+        {!isSessionFinished && (
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-destructive rounded p-0.5 transition-colors"
+            disabled={isDeleting}
+            onClick={(e) => {
+              e.stopPropagation();
+              startDeleteTransition(async () => {
+                await deleteSessionExerciseAction(sessionExercise._id);
+              });
+            }}
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        )}
         <ChevronDown
           className={cn(
             "text-muted-foreground h-4 w-4 shrink-0 transition-transform",
@@ -639,48 +903,81 @@ function SessionExerciseItem({
 
       {isExpanded && (
         <div className="border-t px-3 py-2">
-          {/* Sets table */}
           {sets === undefined ? (
-            <p className="text-muted-foreground text-xs">Loading sets…</p>
+            <p className="text-muted-foreground text-xs">Loading sets...</p>
           ) : sets.length === 0 ? (
             <p className="text-muted-foreground text-xs">No sets recorded.</p>
           ) : (
             <div className="mb-2">
-              <div className="text-muted-foreground grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 text-[10px] font-medium uppercase">
+              <div
+                className={cn(
+                  "text-muted-foreground grid gap-2 text-[10px] font-medium uppercase",
+                  hasExtraFields
+                    ? "grid-cols-[1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.5fr_0.5fr_auto]"
+                    : "grid-cols-[1fr_1fr_1fr_1fr_auto]",
+                )}
+              >
                 <span>Set</span>
                 <span>Reps</span>
                 <span>Weight</span>
                 <span>Effort</span>
+                {hasExtraFields && (
+                  <>
+                    <span>RIR</span>
+                    <span>Dur</span>
+                    <span>Dist</span>
+                  </>
+                )}
                 <span></span>
               </div>
               {sets.map((s) => (
                 <div
                   key={s._id}
-                  className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 border-b py-1 text-xs last:border-b-0"
+                  className={cn(
+                    "grid gap-2 border-b py-1 text-xs last:border-b-0",
+                    hasExtraFields
+                      ? "grid-cols-[1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.5fr_0.5fr_auto]"
+                      : "grid-cols-[1fr_1fr_1fr_1fr_auto]",
+                    s.isWarmup && "text-muted-foreground italic",
+                  )}
                 >
-                  <span>{s.setNumber}</span>
+                  <span>
+                    {s.isWarmup ? "W" : s.setNumber}
+                  </span>
                   <span>{s.reps ?? "–"}</span>
                   <span>{s.weight != null ? `${s.weight} kg` : "–"}</span>
                   <span>{s.effortLevel != null ? `${s.effortLevel}/10` : "–"}</span>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-destructive rounded p-0.5 transition-colors"
-                    disabled={isDeleting}
-                    onClick={() => {
-                      startDeleteTransition(async () => {
-                        await deleteSetAction(s._id);
-                      });
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
+                  {hasExtraFields && (
+                    <>
+                      <span>{s.rir != null ? s.rir : "–"}</span>
+                      <span>{s.durationSeconds != null ? `${s.durationSeconds}s` : "–"}</span>
+                      <span>{s.distance != null ? s.distance : "–"}</span>
+                    </>
+                  )}
+                  {!isSessionFinished && (
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-destructive rounded p-0.5 transition-colors"
+                      disabled={isDeleting}
+                      onClick={() => {
+                        startDeleteTransition(async () => {
+                          await deleteSetAction(s._id);
+                        });
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
+                  {isSessionFinished && hasExtraFields && <span />}
+                  {isSessionFinished && !hasExtraFields && <span />}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Add set */}
-          {showAddSet ? (
+          {timerRest > 0 && <RestTimer key={timerRest} restSeconds={timerRest} />}
+
+          {showAddSet && !isSessionFinished ? (
             <form
               action={submitSetAction}
               noValidate
@@ -744,6 +1041,97 @@ function SessionExerciseItem({
                   <FieldError>{setErrors.effortLevel?.message}</FieldError>
                 </Field>
               </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <Field>
+                  <FieldLabel
+                    htmlFor={`set-rir-${sessionExercise._id}`}
+                    className="text-[10px]"
+                  >
+                    RIR
+                  </FieldLabel>
+                  <Input
+                    id={`set-rir-${sessionExercise._id}`}
+                    type="number"
+                    min={0}
+                    max={20}
+                    placeholder="2"
+                    className="h-7 text-xs"
+                    disabled={isSetPending}
+                    {...registerSet("rir")}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel
+                    htmlFor={`set-dur-${sessionExercise._id}`}
+                    className="text-[10px]"
+                  >
+                    Duration (s)
+                  </FieldLabel>
+                  <Input
+                    id={`set-dur-${sessionExercise._id}`}
+                    type="number"
+                    min={0}
+                    placeholder="60"
+                    className="h-7 text-xs"
+                    disabled={isSetPending}
+                    {...registerSet("durationSeconds")}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel
+                    htmlFor={`set-dist-${sessionExercise._id}`}
+                    className="text-[10px]"
+                  >
+                    Distance
+                  </FieldLabel>
+                  <Input
+                    id={`set-dist-${sessionExercise._id}`}
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    placeholder="5.0"
+                    className="h-7 text-xs"
+                    disabled={isSetPending}
+                    {...registerSet("distance")}
+                  />
+                </Field>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Field>
+                  <FieldLabel
+                    htmlFor={`set-rest-${sessionExercise._id}`}
+                    className="text-[10px]"
+                  >
+                    Rest (s)
+                  </FieldLabel>
+                  <Input
+                    id={`set-rest-${sessionExercise._id}`}
+                    type="number"
+                    min={0}
+                    placeholder="90"
+                    className="h-7 w-20 text-xs"
+                    disabled={isSetPending}
+                    {...registerSet("restSeconds")}
+                  />
+                </Field>
+
+                <div className="flex items-center gap-2 pt-4">
+                  <Checkbox
+                    id={`set-warmup-${sessionExercise._id}`}
+                    disabled={isSetPending}
+                    {...registerSet("isWarmup")}
+                  />
+                  <Label
+                    htmlFor={`set-warmup-${sessionExercise._id}`}
+                    className="text-[10px] cursor-pointer"
+                  >
+                    Warmup
+                  </Label>
+                </div>
+              </div>
+
               {setFormState.message && (
                 <FieldError
                   className={
@@ -770,24 +1158,89 @@ function SessionExerciseItem({
                   className="h-6 text-[10px]"
                   disabled={isSetPending}
                 >
-                  {isSetPending ? "Adding…" : "Add set"}
+                  {isSetPending ? "Adding..." : "Add set"}
                 </Button>
               </div>
             </form>
           ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="mt-1 h-6 w-full text-[10px]"
-              onClick={() => setShowAddSet(true)}
-            >
-              <Plus className="mr-1 h-3 w-3" />
-              Add set
-            </Button>
+            !isSessionFinished && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-1 h-6 w-full text-[10px]"
+                onClick={() => setShowAddSet(true)}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                Add set
+              </Button>
+            )
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Save as Template Form ── */
+
+function SaveTemplateForm({ sessionId }: { sessionId: Id<"workoutSessions"> }) {
+  const [show, setShow] = useState(false);
+  const [name, setName] = useState("");
+  const [saving, startSave] = useTransition();
+
+  if (!show) {
+    return (
+      <div className="px-4">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full text-[10px]"
+          onClick={() => setShow(true)}
+        >
+          Save as template
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4">
+      <div className="flex items-center gap-2 rounded border p-2">
+        <Input
+          placeholder="Template name..."
+          className="h-7 text-xs"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={saving}
+        />
+        <Button
+          type="button"
+          size="sm"
+          className="h-7 text-[10px] shrink-0"
+          disabled={saving || !name.trim()}
+          onClick={() => {
+            startSave(async () => {
+              await saveTemplateFromSessionAction(sessionId, name.trim());
+              setShow(false);
+              setName("");
+            });
+          }}
+        >
+          {saving ? "Saving..." : "Save"}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 text-[10px] shrink-0"
+          disabled={saving}
+          onClick={() => setShow(false)}
+        >
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Image from "next/image"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import ExerciseHistory from "@/components/exercises/exercise-history"
 import type { Id } from "@/convex/_generated/dataModel"
 import { fetchAuthQuery } from "@/lib/auth-server"
 import { api } from "@/convex/_generated/api"
@@ -27,31 +28,34 @@ export default async function Exercise({
     : null
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{exercise.name}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          {muscleGroup && <span>Muscle group: {muscleGroup.name}</span>}
-          {exercise.equipment && <span>Equipment: {exercise.equipment}</span>}
-        </div>
-        {muscleGroup?.illustrationUrl && (
-          <Image
-            src={muscleGroup.illustrationUrl}
-            alt={`${muscleGroup.name} illustration`}
-            width={400}
-            height={400}
-            unoptimized
-            className="rounded-md"
-          />
-        )}
-        {!muscleGroup && !exercise.equipment && (
-          <p className="text-muted-foreground text-sm">
-            No details added yet.
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{exercise.name}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+            {muscleGroup && <span>Muscle group: {muscleGroup.name}</span>}
+            {exercise.equipment && <span>Equipment: {exercise.equipment}</span>}
+          </div>
+          {muscleGroup?.illustrationUrl && (
+            <Image
+              src={muscleGroup.illustrationUrl}
+              alt={`${muscleGroup.name} illustration`}
+              width={400}
+              height={400}
+              unoptimized
+              className="rounded-md"
+            />
+          )}
+          {!muscleGroup && !exercise.equipment && (
+            <p className="text-muted-foreground text-sm">
+              No details added yet.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+      <ExerciseHistory exerciseId={id as Id<"exercises">} />
+    </div>
   )
 }

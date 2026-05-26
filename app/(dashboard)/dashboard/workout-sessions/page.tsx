@@ -1,18 +1,22 @@
 import AddSession from "@/components/workouts/add-session"
 import SessionsCalendar from "@/components/workouts/sessions-calendar"
+import TemplateList from "@/components/workouts/template-list"
+import ExportCsvButton from "@/components/workouts/export-csv-button"
 import { Separator } from "@/components/ui/separator"
 import React from "react"
 
 const WorkoutSessions = () => {
   return (
-    <div>
-      {/* Workout Sessions Header */}
-      <div className="flex justify-between">
+    <div className="space-y-6">
+      <div className="flex justify-between items-start">
         <h1 className="text-2xl font-bold">Workout Sessions</h1>
-        <AddSession />
+        <div className="flex items-center gap-2">
+          <ExportCsvButton />
+          <AddSession />
+        </div>
       </div>
-      <Separator className="my-4" />
-      {/* Workout Sessions List */}
+      <TemplateList />
+      <Separator />
       <SessionsCalendar />
     </div>
   )

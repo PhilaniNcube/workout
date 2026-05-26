@@ -100,4 +100,23 @@ export default defineSchema({
 			"exerciseId",
 			"recordType",
 		]),
+
+	workoutTemplates: defineTable({
+		ownerTokenIdentifier: v.string(),
+		name: v.string(),
+		notes: v.optional(v.union(v.null(), v.string())),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_ownerTokenIdentifier", ["ownerTokenIdentifier"]),
+
+	workoutTemplateExercises: defineTable({
+		ownerTokenIdentifier: v.string(),
+		templateId: v.id("workoutTemplates"),
+		exerciseId: v.id("exercises"),
+		order: v.number(),
+		notes: v.optional(v.union(v.null(), v.string())),
+		createdAt: v.number(),
+	})
+		.index("by_ownerTokenIdentifier_and_templateId", ["ownerTokenIdentifier", "templateId"]),
 });
