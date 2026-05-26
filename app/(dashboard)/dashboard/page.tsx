@@ -2,6 +2,7 @@ import PersonalBestsByMuscleGroupCard from "@/components/dashboard/personal-best
 import SuggestedNextExercisesCard from "@/components/dashboard/suggested-next-exercises-card"
 import StreaksCard from "@/components/dashboard/streaks-card"
 import OverloadAlertsCard from "@/components/dashboard/overload-alerts-card"
+import GoogleHealthCard from "@/components/dashboard/google-health-card"
 import React from "react"
 
 const DashboardPage = () => {
@@ -9,6 +10,7 @@ const DashboardPage = () => {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Dashboard</h1>
       <StreaksCard />
+      <GoogleHealthCard />
       <OverloadAlertsCard />
       <SuggestedNextExercisesCard />
       <PersonalBestsByMuscleGroupCard />

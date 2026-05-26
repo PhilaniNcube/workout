@@ -25,6 +25,22 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       enabled: true,
       requireEmailVerification: false,
     },
+    socialProviders: {
+      google: {
+        clientId: process.env.CLIENT_ID!,
+        clientSecret: process.env.CLIENT_SECRET!,
+        scope: [
+          "openid",
+          "profile",
+          "email",
+          "https://www.googleapis.com/auth/fitness.activity.read",
+          "https://www.googleapis.com/auth/fitness.heart_rate.read",
+          "https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly"
+        ],
+        accessType: "offline",
+        prompt: "consent",
+      },
+    },
     plugins: [
       // The Convex plugin is required for Convex compatibility
       convex({ authConfig }),
