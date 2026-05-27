@@ -26,6 +26,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const addExerciseSchema = z.object({
   name: z
@@ -38,6 +39,16 @@ const addExerciseSchema = z.object({
     .string()
     .trim()
     .max(80, "Equipment must be 80 characters or fewer")
+    .optional(),
+  machineNotes: z
+    .string()
+    .trim()
+    .max(500, "Machine notes must be 500 characters or fewer")
+    .optional(),
+  setupNotes: z
+    .string()
+    .trim()
+    .max(500, "Setup notes must be 500 characters or fewer")
     .optional(),
 });
 
@@ -61,6 +72,8 @@ async function submitAddExercise(
     name: String(formData.get("name") ?? ""),
     muscleGroup: String(formData.get("muscleGroup") ?? ""),
     equipment: String(formData.get("equipment") ?? ""),
+    machineNotes: String(formData.get("machineNotes") ?? ""),
+    setupNotes: String(formData.get("setupNotes") ?? ""),
   };
 
   const parsed = addExerciseSchema.safeParse(values);
@@ -83,10 +96,22 @@ async function submitAddExercise(
       ? parsed.data.equipment
       : null;
 
+  const machineNotes =
+    parsed.data.machineNotes && parsed.data.machineNotes !== ""
+      ? parsed.data.machineNotes
+      : null;
+
+  const setupNotes =
+    parsed.data.setupNotes && parsed.data.setupNotes !== ""
+      ? parsed.data.setupNotes
+      : null;
+
   const result = await addExerciseAction(
     parsed.data.name,
     muscleGroupId,
-    equipment
+    equipment,
+    machineNotes,
+    setupNotes,
   );
 
   if (!result.success) {
@@ -116,6 +141,8 @@ export default function AddExercise() {
       name: "",
       muscleGroup: "",
       equipment: "",
+      machineNotes: "",
+      setupNotes: "",
     },
   });
 
@@ -124,6 +151,8 @@ export default function AddExercise() {
       name: String(formData.get("name") ?? ""),
       muscleGroup: String(formData.get("muscleGroup") ?? ""),
       equipment: String(formData.get("equipment") ?? ""),
+      machineNotes: String(formData.get("machineNotes") ?? ""),
+      setupNotes: String(formData.get("setupNotes") ?? ""),
     });
 
     if (!parsed.success) {
@@ -149,7 +178,7 @@ export default function AddExercise() {
       <DialogTrigger asChild>
         <Button type="button">Add exercise</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add exercise</DialogTitle>
           <DialogDescription>
@@ -200,6 +229,32 @@ export default function AddExercise() {
                 {...register("equipment")}
               />
               <FieldError>{errors.equipment?.message}</FieldError>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="exercise-machine-notes">
+                Machine identification
+              </FieldLabel>
+              <Textarea
+                id="exercise-machine-notes"
+                placeholder="e.g. Black Hammer Strength machine, 2nd row from left, pin-loaded"
+                disabled={isPending}
+                {...register("machineNotes")}
+              />
+              <FieldError>{errors.machineNotes?.message}</FieldError>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="exercise-setup-notes">
+                Setup notes
+              </FieldLabel>
+              <Textarea
+                id="exercise-setup-notes"
+                placeholder="e.g. Seat position 3, bar at mid-chest, feet flat"
+                disabled={isPending}
+                {...register("setupNotes")}
+              />
+              <FieldError>{errors.setupNotes?.message}</FieldError>
             </Field>
 
             {!errors.name && !errors.equipment && state.message ? (

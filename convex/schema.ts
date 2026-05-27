@@ -15,6 +15,9 @@ export default defineSchema({
 		muscleGroup: v.optional(v.union(v.null(), v.id("muscleGroups"))),
 		equipment: v.optional(v.union(v.null(), v.string())),
 		isArchived: v.boolean(),
+		photoStorageId: v.optional(v.union(v.null(), v.id("_storage"))),
+		machineNotes: v.optional(v.union(v.null(), v.string())),
+		setupNotes: v.optional(v.union(v.null(), v.string())),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})

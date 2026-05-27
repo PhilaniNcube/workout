@@ -3,6 +3,10 @@ import SuggestedNextExercisesCard from "@/components/dashboard/suggested-next-ex
 import StreaksCard from "@/components/dashboard/streaks-card"
 import OverloadAlertsCard from "@/components/dashboard/overload-alerts-card"
 import GoogleHealthCard from "@/components/dashboard/google-health-card"
+import WeeklyVolumeCard from "@/components/dashboard/weekly-volume-card"
+import MuscleBalanceCard from "@/components/dashboard/muscle-balance-card"
+import WeightReferenceCard from "@/components/dashboard/weight-reference-card"
+import SessionHistoryCard from "@/components/dashboard/session-history-card"
 import React from "react"
 
 const DashboardPage = () => {
@@ -12,6 +16,12 @@ const DashboardPage = () => {
       <StreaksCard />
       <GoogleHealthCard />
       <OverloadAlertsCard />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <WeeklyVolumeCard />
+        <MuscleBalanceCard />
+      </div>
+      <WeightReferenceCard />
+      <SessionHistoryCard />
       <SuggestedNextExercisesCard />
       <PersonalBestsByMuscleGroupCard />
     </div>

@@ -5,6 +5,7 @@ import { requireTokenIdentifier } from "./lib/authz";
 
 const nullableString = v.optional(v.union(v.null(), v.string()));
 const nullableMuscleGroupId = v.optional(v.union(v.null(), v.id("muscleGroups")));
+const nullableStorageId = v.optional(v.union(v.null(), v.id("_storage")));
 
 export const list = query({
 	args: {
@@ -37,7 +38,18 @@ export const get = query({
 		if (!exercise) {
 			return null;
 		}
-		return exercise;
+		const photoUrl = exercise.photoStorageId
+			? await ctx.storage.getUrl(exercise.photoStorageId)
+			: null;
+		return { ...exercise, photoUrl };
+	},
+});
+
+export const generatePhotoUploadUrl = mutation({
+	args: {},
+	handler: async (ctx) => {
+		await requireTokenIdentifier(ctx);
+		return await ctx.storage.generateUploadUrl();
 	},
 });
 
@@ -46,6 +58,8 @@ export const create = mutation({
 		name: v.string(),
 		muscleGroup: nullableMuscleGroupId,
 		equipment: nullableString,
+		machineNotes: nullableString,
+		setupNotes: nullableString,
 	},
 	handler: async (ctx, args) => {
 		await requireTokenIdentifier(ctx);
@@ -55,6 +69,8 @@ export const create = mutation({
 			muscleGroup: args.muscleGroup ?? null,
 			equipment: args.equipment ?? null,
 			isArchived: false,
+			machineNotes: args.machineNotes ?? null,
+			setupNotes: args.setupNotes ?? null,
 			createdAt: now,
 			updatedAt: now,
 		});
@@ -67,6 +83,9 @@ export const update = mutation({
 		name: v.optional(v.string()),
 		muscleGroup: nullableMuscleGroupId,
 		equipment: nullableString,
+		photoStorageId: nullableStorageId,
+		machineNotes: nullableString,
+		setupNotes: nullableString,
 	},
 	handler: async (ctx, args) => {
 		await requireTokenIdentifier(ctx);
@@ -75,24 +94,16 @@ export const update = mutation({
 			throw new Error("Exercise not found");
 		}
 
-		const patch: {
-			name?: string;
-			muscleGroup?: Id<"muscleGroups"> | null;
-			equipment?: string | null;
-			updatedAt: number;
-		} = {
+		const patch: Record<string, unknown> = {
 			updatedAt: Date.now(),
 		};
 
-		if (args.name !== undefined) {
-			patch.name = args.name;
-		}
-		if (args.muscleGroup !== undefined) {
-			patch.muscleGroup = args.muscleGroup;
-		}
-		if (args.equipment !== undefined) {
-			patch.equipment = args.equipment;
-		}
+		if (args.name !== undefined) patch.name = args.name;
+		if (args.muscleGroup !== undefined) patch.muscleGroup = args.muscleGroup;
+		if (args.equipment !== undefined) patch.equipment = args.equipment;
+		if (args.photoStorageId !== undefined) patch.photoStorageId = args.photoStorageId;
+		if (args.machineNotes !== undefined) patch.machineNotes = args.machineNotes;
+		if (args.setupNotes !== undefined) patch.setupNotes = args.setupNotes;
 
 		await ctx.db.patch(args.exerciseId, patch);
 		return args.exerciseId;
@@ -164,5 +175,82 @@ export const getHistory = query({
 		}
 
 		return results;
+	},
+});
+
+export const getLastUsedWeights = query({
+	args: {
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const tokenIdentifier = await requireTokenIdentifier(ctx);
+		const limit = Math.min(Math.max(args.limit ?? 50, 1), 100);
+
+		const exercises = await ctx.db
+			.query("exercises")
+			.withIndex("by_isArchived", (q) => q.eq("isArchived", false))
+			.take(200);
+
+		const results: {
+			exerciseId: Id<"exercises">;
+			exerciseName: string;
+			muscleGroupName: string | null;
+			equipment: string | null;
+			lastWeight: number | null;
+			lastReps: number | null;
+			lastDate: number | null;
+		}[] = [];
+
+		for (const exercise of exercises) {
+			const sessionExercises = await ctx.db
+				.query("workoutSessionExercises")
+				.withIndex("by_ownerTokenIdentifier_and_exerciseId", (q) =>
+					q
+						.eq("ownerTokenIdentifier", tokenIdentifier)
+						.eq("exerciseId", exercise._id),
+				)
+				.order("desc")
+				.take(1);
+
+			if (sessionExercises.length === 0) continue;
+
+			const se = sessionExercises[0];
+			const session = await ctx.db.get(se.workoutSessionId);
+			if (!session) continue;
+
+			const sets = await ctx.db
+				.query("sets")
+				.withIndex("by_ownerTokenIdentifier_and_workoutSessionExerciseId", (q) =>
+					q
+						.eq("ownerTokenIdentifier", tokenIdentifier)
+						.eq("workoutSessionExerciseId", se._id),
+				)
+				.order("desc")
+				.take(1);
+
+			if (sets.length === 0) continue;
+
+			const lastSet = sets[0];
+			if (lastSet.weight == null) continue;
+
+			let muscleGroupName: string | null = null;
+			if (exercise.muscleGroup) {
+				const mg = await ctx.db.get(exercise.muscleGroup);
+				muscleGroupName = mg?.name ?? null;
+			}
+
+			results.push({
+				exerciseId: exercise._id,
+				exerciseName: exercise.name,
+				muscleGroupName,
+				equipment: exercise.equipment ?? null,
+				lastWeight: lastSet.weight,
+				lastReps: lastSet.reps ?? null,
+				lastDate: session.startedAt,
+			});
+		}
+
+		results.sort((a, b) => (b.lastDate ?? 0) - (a.lastDate ?? 0));
+		return results.slice(0, limit);
 	},
 });

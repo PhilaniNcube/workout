@@ -30,12 +30,16 @@ export async function addExerciseAction(
 	name: string,
 	muscleGroup?: Id<"muscleGroups"> | null,
 	equipment?: string | null,
+	machineNotes?: string | null,
+	setupNotes?: string | null,
 ): Promise<ExerciseActionResult> {
 	try {
 		const exerciseId = await fetchAuthMutation(api.exercises.create, {
 			name,
 			...(muscleGroup !== undefined ? { muscleGroup } : {}),
 			...(equipment !== undefined ? { equipment } : {}),
+			...(machineNotes !== undefined ? { machineNotes } : {}),
+			...(setupNotes !== undefined ? { setupNotes } : {}),
 		});
 
 		return {
@@ -48,4 +52,37 @@ export async function addExerciseAction(
 			message: getErrorMessage(error),
 		};
 	}
+}
+
+export async function updateExerciseAction(
+	exerciseId: Id<"exercises">,
+	updates: {
+		name?: string;
+		muscleGroup?: Id<"muscleGroups"> | null;
+		equipment?: string | null;
+		photoStorageId?: Id<"_storage"> | null;
+		machineNotes?: string | null;
+		setupNotes?: string | null;
+	},
+): Promise<ExerciseActionResult> {
+	try {
+		await fetchAuthMutation(api.exercises.update, {
+			exerciseId,
+			...updates,
+		});
+
+		return {
+			success: true,
+			exerciseId,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: getErrorMessage(error),
+		};
+	}
+}
+
+export async function generatePhotoUploadUrlAction(): Promise<string> {
+	return await fetchAuthMutation(api.exercises.generatePhotoUploadUrl, {});
 }

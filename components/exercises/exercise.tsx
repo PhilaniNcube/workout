@@ -2,6 +2,7 @@ import Image from "next/image"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import ExerciseHistory from "@/components/exercises/exercise-history"
+import EstimatedOneRepMax from "@/components/exercises/estimated-1rm"
 import type { Id } from "@/convex/_generated/dataModel"
 import { fetchAuthQuery } from "@/lib/auth-server"
 import { api } from "@/convex/_generated/api"
@@ -29,32 +30,76 @@ export default async function Exercise({
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{exercise.name}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            {muscleGroup && <span>Muscle group: {muscleGroup.name}</span>}
-            {exercise.equipment && <span>Equipment: {exercise.equipment}</span>}
-          </div>
-          {muscleGroup?.illustrationUrl && (
-            <Image
-              src={muscleGroup.illustrationUrl}
-              alt={`${muscleGroup.name} illustration`}
-              width={400}
-              height={400}
-              unoptimized
-              className="rounded-md"
-            />
-          )}
-          {!muscleGroup && !exercise.equipment && (
-            <p className="text-muted-foreground text-sm">
-              No details added yet.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-[1fr_auto]">
+        <Card>
+          <CardHeader>
+            <CardTitle>{exercise.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+              {muscleGroup && <span>Muscle group: {muscleGroup.name}</span>}
+              {exercise.equipment && (
+                <span>Equipment: {exercise.equipment}</span>
+              )}
+            </div>
+            {muscleGroup?.illustrationUrl && (
+              <Image
+                src={muscleGroup.illustrationUrl}
+                alt={`${muscleGroup.name} illustration`}
+                width={400}
+                height={400}
+                unoptimized
+                className="rounded-md"
+              />
+            )}
+            {exercise.photoUrl && (
+              <div>
+                <p className="text-muted-foreground mb-1 text-xs font-medium">
+                  Machine photo
+                </p>
+                <Image
+                  src={exercise.photoUrl}
+                  alt={`${exercise.name} photo`}
+                  width={400}
+                  height={300}
+                  unoptimized
+                  className="rounded-md"
+                />
+              </div>
+            )}
+            {exercise.machineNotes && (
+              <div>
+                <p className="text-muted-foreground mb-1 text-xs font-medium">
+                  Machine identification
+                </p>
+                <p className="rounded-md border bg-muted/30 p-2 text-sm whitespace-pre-wrap">
+                  {exercise.machineNotes}
+                </p>
+              </div>
+            )}
+            {exercise.setupNotes && (
+              <div>
+                <p className="text-muted-foreground mb-1 text-xs font-medium">
+                  Setup notes
+                </p>
+                <p className="rounded-md border bg-muted/30 p-2 text-sm whitespace-pre-wrap">
+                  {exercise.setupNotes}
+                </p>
+              </div>
+            )}
+            {!muscleGroup &&
+              !exercise.equipment &&
+              !exercise.machineNotes &&
+              !exercise.setupNotes &&
+              !exercise.photoUrl && (
+                <p className="text-muted-foreground text-sm">
+                  No details added yet.
+                </p>
+              )}
+          </CardContent>
+        </Card>
+        <EstimatedOneRepMax exerciseId={id as Id<"exercises">} />
+      </div>
       <ExerciseHistory exerciseId={id as Id<"exercises">} />
     </div>
   )
