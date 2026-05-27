@@ -94,7 +94,14 @@ export default function ExercisesList() {
                     className="hover:bg-muted flex items-center justify-between gap-4 px-4 py-3 transition-colors group-data-[size=sm]/card:px-3"
                   >
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium">{exercise.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{exercise.name}</span>
+                        {exercise.exerciseType !== "strength" && (
+                          <span className="text-muted-foreground rounded border px-1.5 py-0.5 text-[10px] font-medium capitalize">
+                            {exercise.exerciseType}
+                          </span>
+                        )}
+                      </div>
                       {exercise.equipment ? (
                         <span className="text-muted-foreground text-xs">
                           {exercise.equipment}

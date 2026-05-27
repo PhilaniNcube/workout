@@ -58,6 +58,7 @@ export const create = mutation({
 		name: v.string(),
 		muscleGroup: nullableMuscleGroupId,
 		equipment: nullableString,
+		exerciseType: v.string(),
 		machineNotes: nullableString,
 		setupNotes: nullableString,
 	},
@@ -68,6 +69,7 @@ export const create = mutation({
 			name: args.name,
 			muscleGroup: args.muscleGroup ?? null,
 			equipment: args.equipment ?? null,
+			exerciseType: args.exerciseType,
 			isArchived: false,
 			machineNotes: args.machineNotes ?? null,
 			setupNotes: args.setupNotes ?? null,
@@ -83,6 +85,7 @@ export const update = mutation({
 		name: v.optional(v.string()),
 		muscleGroup: nullableMuscleGroupId,
 		equipment: nullableString,
+		exerciseType: v.optional(v.string()),
 		photoStorageId: nullableStorageId,
 		machineNotes: nullableString,
 		setupNotes: nullableString,
@@ -101,6 +104,7 @@ export const update = mutation({
 		if (args.name !== undefined) patch.name = args.name;
 		if (args.muscleGroup !== undefined) patch.muscleGroup = args.muscleGroup;
 		if (args.equipment !== undefined) patch.equipment = args.equipment;
+		if (args.exerciseType !== undefined) patch.exerciseType = args.exerciseType;
 		if (args.photoStorageId !== undefined) patch.photoStorageId = args.photoStorageId;
 		if (args.machineNotes !== undefined) patch.machineNotes = args.machineNotes;
 		if (args.setupNotes !== undefined) patch.setupNotes = args.setupNotes;
@@ -194,10 +198,13 @@ export const getLastUsedWeights = query({
 		const results: {
 			exerciseId: Id<"exercises">;
 			exerciseName: string;
+			exerciseType: string;
 			muscleGroupName: string | null;
 			equipment: string | null;
 			lastWeight: number | null;
 			lastReps: number | null;
+			lastDurationSeconds: number | null;
+			lastDistance: number | null;
 			lastDate: number | null;
 		}[] = [];
 
@@ -231,7 +238,10 @@ export const getLastUsedWeights = query({
 			if (sets.length === 0) continue;
 
 			const lastSet = sets[0];
-			if (lastSet.weight == null) continue;
+			const hasStrengthData = lastSet.weight != null;
+			const hasCardioData = lastSet.durationSeconds != null || lastSet.distance != null;
+
+			if (!hasStrengthData && !hasCardioData) continue;
 
 			let muscleGroupName: string | null = null;
 			if (exercise.muscleGroup) {
@@ -242,10 +252,13 @@ export const getLastUsedWeights = query({
 			results.push({
 				exerciseId: exercise._id,
 				exerciseName: exercise.name,
+				exerciseType: exercise.exerciseType,
 				muscleGroupName,
 				equipment: exercise.equipment ?? null,
-				lastWeight: lastSet.weight,
+				lastWeight: lastSet.weight ?? null,
 				lastReps: lastSet.reps ?? null,
+				lastDurationSeconds: lastSet.durationSeconds ?? null,
+				lastDistance: lastSet.distance ?? null,
 				lastDate: session.startedAt,
 			});
 		}

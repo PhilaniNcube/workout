@@ -30,6 +30,7 @@ export async function addExerciseAction(
 	name: string,
 	muscleGroup?: Id<"muscleGroups"> | null,
 	equipment?: string | null,
+	exerciseType?: string,
 	machineNotes?: string | null,
 	setupNotes?: string | null,
 ): Promise<ExerciseActionResult> {
@@ -38,6 +39,7 @@ export async function addExerciseAction(
 			name,
 			...(muscleGroup !== undefined ? { muscleGroup } : {}),
 			...(equipment !== undefined ? { equipment } : {}),
+			exerciseType: exerciseType ?? "strength",
 			...(machineNotes !== undefined ? { machineNotes } : {}),
 			...(setupNotes !== undefined ? { setupNotes } : {}),
 		});
@@ -60,6 +62,7 @@ export async function updateExerciseAction(
 		name?: string;
 		muscleGroup?: Id<"muscleGroups"> | null;
 		equipment?: string | null;
+		exerciseType?: string;
 		photoStorageId?: Id<"_storage"> | null;
 		machineNotes?: string | null;
 		setupNotes?: string | null;

@@ -8,6 +8,10 @@ import { fetchAuthQuery } from "@/lib/auth-server"
 import { api } from "@/convex/_generated/api"
 import { notFound } from "next/navigation"
 
+function formatExerciseType(type: string): string {
+  return type.charAt(0).toUpperCase() + type.slice(1)
+}
+
 export default async function Exercise({
   paramsPromise,
 }: {
@@ -28,6 +32,8 @@ export default async function Exercise({
       })
     : null
 
+  const isStrength = exercise.exerciseType === "strength"
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-6 md:grid-cols-[1fr_auto]">
@@ -37,6 +43,9 @@ export default async function Exercise({
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+              <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
+                {formatExerciseType(exercise.exerciseType)}
+              </span>
               {muscleGroup && <span>Muscle group: {muscleGroup.name}</span>}
               {exercise.equipment && (
                 <span>Equipment: {exercise.equipment}</span>
@@ -98,7 +107,7 @@ export default async function Exercise({
               )}
           </CardContent>
         </Card>
-        <EstimatedOneRepMax exerciseId={id as Id<"exercises">} />
+        {isStrength && <EstimatedOneRepMax exerciseId={id as Id<"exercises">} />}
       </div>
       <ExerciseHistory exerciseId={id as Id<"exercises">} />
     </div>

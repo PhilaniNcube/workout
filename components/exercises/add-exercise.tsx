@@ -40,6 +40,7 @@ const addExerciseSchema = z.object({
     .trim()
     .max(80, "Equipment must be 80 characters or fewer")
     .optional(),
+  exerciseType: z.string().min(1, "Exercise type is required"),
   machineNotes: z
     .string()
     .trim()
@@ -72,6 +73,7 @@ async function submitAddExercise(
     name: String(formData.get("name") ?? ""),
     muscleGroup: String(formData.get("muscleGroup") ?? ""),
     equipment: String(formData.get("equipment") ?? ""),
+    exerciseType: String(formData.get("exerciseType") ?? "strength"),
     machineNotes: String(formData.get("machineNotes") ?? ""),
     setupNotes: String(formData.get("setupNotes") ?? ""),
   };
@@ -82,6 +84,7 @@ async function submitAddExercise(
     const firstError =
       fieldErrors.name?.[0] ??
       fieldErrors.equipment?.[0] ??
+      fieldErrors.exerciseType?.[0] ??
       "Invalid input.";
     return { success: false, message: firstError };
   }
@@ -110,6 +113,7 @@ async function submitAddExercise(
     parsed.data.name,
     muscleGroupId,
     equipment,
+    parsed.data.exerciseType,
     machineNotes,
     setupNotes,
   );
@@ -141,6 +145,7 @@ export default function AddExercise() {
       name: "",
       muscleGroup: "",
       equipment: "",
+      exerciseType: "strength",
       machineNotes: "",
       setupNotes: "",
     },
@@ -151,6 +156,7 @@ export default function AddExercise() {
       name: String(formData.get("name") ?? ""),
       muscleGroup: String(formData.get("muscleGroup") ?? ""),
       equipment: String(formData.get("equipment") ?? ""),
+      exerciseType: String(formData.get("exerciseType") ?? "strength"),
       machineNotes: String(formData.get("machineNotes") ?? ""),
       setupNotes: String(formData.get("setupNotes") ?? ""),
     });
@@ -229,6 +235,22 @@ export default function AddExercise() {
                 {...register("equipment")}
               />
               <FieldError>{errors.equipment?.message}</FieldError>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="exercise-type">Exercise Type</FieldLabel>
+              <select
+                id="exercise-type"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isPending}
+                defaultValue="strength"
+                {...register("exerciseType")}
+              >
+                <option value="strength">Strength</option>
+                <option value="cardio">Cardio</option>
+                <option value="plyometric">Plyometric</option>
+              </select>
+              <FieldError>{errors.exerciseType?.message}</FieldError>
             </Field>
 
             <Field>

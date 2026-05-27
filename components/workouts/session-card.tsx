@@ -245,6 +245,7 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
   const {
     register,
     control,
+    watch,
     clearErrors,
     setError,
     formState: { errors },
@@ -262,6 +263,13 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
       notes: "",
     },
   });
+
+  const selectedExerciseId = watch("exerciseId");
+  const selectedExercise = selectedExerciseId
+    ? exerciseMap.get(selectedExerciseId as Id<"exercises">)
+    : null;
+  const selectedExerciseType = selectedExercise?.exerciseType ?? "strength";
+  const isCardioExercise = selectedExerciseType === "cardio";
 
   const submitAction = async (formData: FormData) => {
     const parsed = addExerciseSchema.safeParse({
@@ -417,6 +425,7 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                       key={se._id}
                       sessionExercise={se}
                       exerciseName={exercise?.name ?? "Unknown exercise"}
+                      exerciseType={exercise?.exerciseType ?? "strength"}
                       index={index}
                       isExpanded={isExpanded}
                       isSessionFinished={isFinished}
@@ -460,114 +469,168 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                 </Field>
 
                 <div className="grid grid-cols-3 gap-2">
-                  <Field>
-                    <FieldLabel htmlFor="session-exercise-reps">Reps</FieldLabel>
-                    <Input
-                      id="session-exercise-reps"
-                      type="number"
-                      min={1}
-                      placeholder="e.g. 10"
-                      aria-invalid={errors.reps ? true : undefined}
-                      disabled={isPending}
-                      {...register("reps")}
-                    />
-                    <FieldError>{errors.reps?.message}</FieldError>
-                  </Field>
+                  {isCardioExercise ? (
+                    <>
+                      <Field>
+                        <FieldLabel htmlFor="session-exercise-dur">Duration (s)</FieldLabel>
+                        <Input
+                          id="session-exercise-dur"
+                          type="number"
+                          min={0}
+                          placeholder="e.g. 1800"
+                          disabled={isPending}
+                          {...register("durationSeconds")}
+                        />
+                      </Field>
 
-                  <Field>
-                    <FieldLabel htmlFor="session-exercise-weight">
-                      Weight (kg)
-                    </FieldLabel>
-                    <Input
-                      id="session-exercise-weight"
-                      type="number"
-                      min={0}
-                      step="0.5"
-                      placeholder="e.g. 60"
-                      aria-invalid={errors.weight ? true : undefined}
-                      disabled={isPending}
-                      {...register("weight")}
-                    />
-                    <FieldError>{errors.weight?.message}</FieldError>
-                  </Field>
+                      <Field>
+                        <FieldLabel htmlFor="session-exercise-dist">Distance (km)</FieldLabel>
+                        <Input
+                          id="session-exercise-dist"
+                          type="number"
+                          min={0}
+                          step="0.1"
+                          placeholder="e.g. 5.0"
+                          disabled={isPending}
+                          {...register("distance")}
+                        />
+                      </Field>
 
-                  <Field>
-                    <FieldLabel htmlFor="session-exercise-effort">
-                      Effort (1–10)
-                    </FieldLabel>
-                    <Input
-                      id="session-exercise-effort"
-                      type="number"
-                      min={1}
-                      max={10}
-                      placeholder="e.g. 7"
-                      aria-invalid={errors.effortLevel ? true : undefined}
-                      disabled={isPending}
-                      {...register("effortLevel")}
-                    />
-                    <FieldError>{errors.effortLevel?.message}</FieldError>
-                  </Field>
+                      <Field>
+                        <FieldLabel htmlFor="session-exercise-effort">
+                          Effort (1–10)
+                        </FieldLabel>
+                        <Input
+                          id="session-exercise-effort"
+                          type="number"
+                          min={1}
+                          max={10}
+                          placeholder="e.g. 7"
+                          aria-invalid={errors.effortLevel ? true : undefined}
+                          disabled={isPending}
+                          {...register("effortLevel")}
+                        />
+                        <FieldError>{errors.effortLevel?.message}</FieldError>
+                      </Field>
+                    </>
+                  ) : (
+                    <>
+                      <Field>
+                        <FieldLabel htmlFor="session-exercise-reps">Reps</FieldLabel>
+                        <Input
+                          id="session-exercise-reps"
+                          type="number"
+                          min={1}
+                          placeholder="e.g. 10"
+                          aria-invalid={errors.reps ? true : undefined}
+                          disabled={isPending}
+                          {...register("reps")}
+                        />
+                        <FieldError>{errors.reps?.message}</FieldError>
+                      </Field>
+
+                      <Field>
+                        <FieldLabel htmlFor="session-exercise-weight">
+                          Weight (kg)
+                        </FieldLabel>
+                        <Input
+                          id="session-exercise-weight"
+                          type="number"
+                          min={0}
+                          step="0.5"
+                          placeholder="e.g. 60"
+                          aria-invalid={errors.weight ? true : undefined}
+                          disabled={isPending}
+                          {...register("weight")}
+                        />
+                        <FieldError>{errors.weight?.message}</FieldError>
+                      </Field>
+
+                      <Field>
+                        <FieldLabel htmlFor="session-exercise-effort">
+                          Effort (1–10)
+                        </FieldLabel>
+                        <Input
+                          id="session-exercise-effort"
+                          type="number"
+                          min={1}
+                          max={10}
+                          placeholder="e.g. 7"
+                          aria-invalid={errors.effortLevel ? true : undefined}
+                          disabled={isPending}
+                          {...register("effortLevel")}
+                        />
+                        <FieldError>{errors.effortLevel?.message}</FieldError>
+                      </Field>
+                    </>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
-                  <Field>
-                    <FieldLabel htmlFor="session-exercise-dur">Duration (s)</FieldLabel>
-                    <Input
-                      id="session-exercise-dur"
-                      type="number"
-                      min={0}
-                      placeholder="e.g. 60"
-                      disabled={isPending}
-                      {...register("durationSeconds")}
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="session-exercise-dist">Distance</FieldLabel>
-                    <Input
-                      id="session-exercise-dist"
-                      type="number"
-                      min={0}
-                      step="0.1"
-                      placeholder="e.g. 5.0"
-                      disabled={isPending}
-                      {...register("distance")}
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="session-exercise-rir">RIR</FieldLabel>
-                    <Input
-                      id="session-exercise-rir"
-                      type="number"
-                      min={0}
-                      max={20}
-                      placeholder="e.g. 2"
-                      disabled={isPending}
-                      {...register("rir")}
-                    />
-                  </Field>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Controller
-                    name="isWarmup"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="session-exercise-warmup"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
+                  {!isCardioExercise && (
+                    <>
+                      <Field>
+                        <FieldLabel htmlFor="session-exercise-dur">Duration (s)</FieldLabel>
+                        <Input
+                          id="session-exercise-dur"
+                          type="number"
+                          min={0}
+                          placeholder="e.g. 60"
                           disabled={isPending}
+                          {...register("durationSeconds")}
                         />
-                        <Label htmlFor="session-exercise-warmup" className="text-sm cursor-pointer">
-                          Warmup set
-                        </Label>
-                      </div>
-                    )}
-                  />
+                      </Field>
+
+                      <Field>
+                        <FieldLabel htmlFor="session-exercise-dist">Distance</FieldLabel>
+                        <Input
+                          id="session-exercise-dist"
+                          type="number"
+                          min={0}
+                          step="0.1"
+                          placeholder="e.g. 5.0"
+                          disabled={isPending}
+                          {...register("distance")}
+                        />
+                      </Field>
+
+                      <Field>
+                        <FieldLabel htmlFor="session-exercise-rir">RIR</FieldLabel>
+                        <Input
+                          id="session-exercise-rir"
+                          type="number"
+                          min={0}
+                          max={20}
+                          placeholder="e.g. 2"
+                          disabled={isPending}
+                          {...register("rir")}
+                        />
+                      </Field>
+                    </>
+                  )}
                 </div>
+
+                {!isCardioExercise && (
+                  <div className="flex items-center gap-2">
+                    <Controller
+                      name="isWarmup"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="session-exercise-warmup"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={isPending}
+                          />
+                          <Label htmlFor="session-exercise-warmup" className="text-sm cursor-pointer">
+                            Warmup set
+                          </Label>
+                        </div>
+                      )}
+                    />
+                  </div>
+                )}
 
                 <Field>
                   <FieldLabel htmlFor="session-exercise-notes">
@@ -765,6 +828,7 @@ async function submitAddSet(
 function SessionExerciseItem({
   sessionExercise,
   exerciseName,
+  exerciseType,
   index,
   isExpanded,
   isSessionFinished,
@@ -772,11 +836,13 @@ function SessionExerciseItem({
 }: {
   sessionExercise: Doc<"workoutSessionExercises">;
   exerciseName: string;
+  exerciseType: string;
   index: number;
   isExpanded: boolean;
   isSessionFinished: boolean;
   onToggle: () => void;
 }) {
+  const isCardio = exerciseType === "cardio";
   const [showAddSet, setShowAddSet] = useState(false);
   const [isDeleting, startDeleteTransition] = useTransition();
   const [timerRest, setTimerRest] = useState<number>(0);
@@ -912,20 +978,32 @@ function SessionExerciseItem({
               <div
                 className={cn(
                   "text-muted-foreground grid gap-2 text-[10px] font-medium uppercase",
-                  hasExtraFields
-                    ? "grid-cols-[1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.5fr_0.5fr_auto]"
-                    : "grid-cols-[1fr_1fr_1fr_1fr_auto]",
+                  isCardio
+                    ? "grid-cols-[1fr_1fr_1fr_1fr_auto]"
+                    : hasExtraFields
+                      ? "grid-cols-[1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.5fr_0.5fr_auto]"
+                      : "grid-cols-[1fr_1fr_1fr_1fr_auto]",
                 )}
               >
-                <span>Set</span>
-                <span>Reps</span>
-                <span>Weight</span>
-                <span>Effort</span>
-                {hasExtraFields && (
+                <span>{isCardio ? "Interval" : "Set"}</span>
+                {isCardio ? (
                   <>
-                    <span>RIR</span>
-                    <span>Dur</span>
-                    <span>Dist</span>
+                    <span>Duration</span>
+                    <span>Distance</span>
+                    <span>Effort</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Reps</span>
+                    <span>Weight</span>
+                    <span>Effort</span>
+                    {hasExtraFields && (
+                      <>
+                        <span>RIR</span>
+                        <span>Dur</span>
+                        <span>Dist</span>
+                      </>
+                    )}
                   </>
                 )}
                 <span></span>
@@ -935,23 +1013,35 @@ function SessionExerciseItem({
                   key={s._id}
                   className={cn(
                     "grid gap-2 border-b py-1 text-xs last:border-b-0",
-                    hasExtraFields
-                      ? "grid-cols-[1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.5fr_0.5fr_auto]"
-                      : "grid-cols-[1fr_1fr_1fr_1fr_auto]",
-                    s.isWarmup && "text-muted-foreground italic",
+                    isCardio
+                      ? "grid-cols-[1fr_1fr_1fr_1fr_auto]"
+                      : hasExtraFields
+                        ? "grid-cols-[1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.5fr_0.5fr_auto]"
+                        : "grid-cols-[1fr_1fr_1fr_1fr_auto]",
+                    !isCardio && s.isWarmup && "text-muted-foreground italic",
                   )}
                 >
                   <span>
-                    {s.isWarmup ? "W" : s.setNumber}
+                    {!isCardio && s.isWarmup ? "W" : s.setNumber}
                   </span>
-                  <span>{s.reps ?? "–"}</span>
-                  <span>{s.weight != null ? `${s.weight} kg` : "–"}</span>
-                  <span>{s.effortLevel != null ? `${s.effortLevel}/10` : "–"}</span>
-                  {hasExtraFields && (
+                  {isCardio ? (
                     <>
-                      <span>{s.rir != null ? s.rir : "–"}</span>
-                      <span>{s.durationSeconds != null ? `${s.durationSeconds}s` : "–"}</span>
-                      <span>{s.distance != null ? s.distance : "–"}</span>
+                      <span>{s.durationSeconds != null ? `${Math.floor(s.durationSeconds / 60)}m ${s.durationSeconds % 60}s` : "–"}</span>
+                      <span>{s.distance != null ? `${s.distance} km` : "–"}</span>
+                      <span>{s.effortLevel != null ? `${s.effortLevel}/10` : "–"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{s.reps ?? "–"}</span>
+                      <span>{s.weight != null ? `${s.weight} kg` : "–"}</span>
+                      <span>{s.effortLevel != null ? `${s.effortLevel}/10` : "–"}</span>
+                      {hasExtraFields && (
+                        <>
+                          <span>{s.rir != null ? s.rir : "–"}</span>
+                          <span>{s.durationSeconds != null ? `${s.durationSeconds}s` : "–"}</span>
+                          <span>{s.distance != null ? s.distance : "–"}</span>
+                        </>
+                      )}
                     </>
                   )}
                   {!isSessionFinished && (
@@ -968,8 +1058,7 @@ function SessionExerciseItem({
                       <Trash2 className="h-3 w-3" />
                     </button>
                   )}
-                  {isSessionFinished && hasExtraFields && <span />}
-                  {isSessionFinished && !hasExtraFields && <span />}
+                  {isSessionFinished && <span />}
                 </div>
               ))}
             </div>
@@ -984,119 +1073,182 @@ function SessionExerciseItem({
               className="mt-2 space-y-2 rounded border bg-muted/30 p-2"
             >
               <div className="grid grid-cols-3 gap-2">
-                <Field>
-                  <FieldLabel
-                    htmlFor={`set-reps-${sessionExercise._id}`}
-                    className="text-[10px]"
-                  >
-                    Reps
-                  </FieldLabel>
-                  <Input
-                    id={`set-reps-${sessionExercise._id}`}
-                    type="number"
-                    min={1}
-                    placeholder="10"
-                    className="h-7 text-xs"
-                    disabled={isSetPending}
-                    {...registerSet("reps")}
-                  />
-                  <FieldError>{setErrors.reps?.message}</FieldError>
-                </Field>
-                <Field>
-                  <FieldLabel
-                    htmlFor={`set-weight-${sessionExercise._id}`}
-                    className="text-[10px]"
-                  >
-                    Weight (kg)
-                  </FieldLabel>
-                  <Input
-                    id={`set-weight-${sessionExercise._id}`}
-                    type="number"
-                    min={0}
-                    step="0.5"
-                    placeholder="60"
-                    className="h-7 text-xs"
-                    disabled={isSetPending}
-                    {...registerSet("weight")}
-                  />
-                  <FieldError>{setErrors.weight?.message}</FieldError>
-                </Field>
-                <Field>
-                  <FieldLabel
-                    htmlFor={`set-effort-${sessionExercise._id}`}
-                    className="text-[10px]"
-                  >
-                    Effort (1–10)
-                  </FieldLabel>
-                  <Input
-                    id={`set-effort-${sessionExercise._id}`}
-                    type="number"
-                    min={1}
-                    max={10}
-                    placeholder="7"
-                    className="h-7 text-xs"
-                    disabled={isSetPending}
-                    {...registerSet("effortLevel")}
-                  />
-                  <FieldError>{setErrors.effortLevel?.message}</FieldError>
-                </Field>
+                {isCardio ? (
+                  <>
+                    <Field>
+                      <FieldLabel
+                        htmlFor={`set-dur-${sessionExercise._id}`}
+                        className="text-[10px]"
+                      >
+                        Duration (s)
+                      </FieldLabel>
+                      <Input
+                        id={`set-dur-${sessionExercise._id}`}
+                        type="number"
+                        min={0}
+                        placeholder="1800"
+                        className="h-7 text-xs"
+                        disabled={isSetPending}
+                        {...registerSet("durationSeconds")}
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel
+                        htmlFor={`set-dist-${sessionExercise._id}`}
+                        className="text-[10px]"
+                      >
+                        Distance (km)
+                      </FieldLabel>
+                      <Input
+                        id={`set-dist-${sessionExercise._id}`}
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        placeholder="5.0"
+                        className="h-7 text-xs"
+                        disabled={isSetPending}
+                        {...registerSet("distance")}
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel
+                        htmlFor={`set-effort-${sessionExercise._id}`}
+                        className="text-[10px]"
+                      >
+                        Effort (1–10)
+                      </FieldLabel>
+                      <Input
+                        id={`set-effort-${sessionExercise._id}`}
+                        type="number"
+                        min={1}
+                        max={10}
+                        placeholder="7"
+                        className="h-7 text-xs"
+                        disabled={isSetPending}
+                        {...registerSet("effortLevel")}
+                      />
+                      <FieldError>{setErrors.effortLevel?.message}</FieldError>
+                    </Field>
+                  </>
+                ) : (
+                  <>
+                    <Field>
+                      <FieldLabel
+                        htmlFor={`set-reps-${sessionExercise._id}`}
+                        className="text-[10px]"
+                      >
+                        Reps
+                      </FieldLabel>
+                      <Input
+                        id={`set-reps-${sessionExercise._id}`}
+                        type="number"
+                        min={1}
+                        placeholder="10"
+                        className="h-7 text-xs"
+                        disabled={isSetPending}
+                        {...registerSet("reps")}
+                      />
+                      <FieldError>{setErrors.reps?.message}</FieldError>
+                    </Field>
+                    <Field>
+                      <FieldLabel
+                        htmlFor={`set-weight-${sessionExercise._id}`}
+                        className="text-[10px]"
+                      >
+                        Weight (kg)
+                      </FieldLabel>
+                      <Input
+                        id={`set-weight-${sessionExercise._id}`}
+                        type="number"
+                        min={0}
+                        step="0.5"
+                        placeholder="60"
+                        className="h-7 text-xs"
+                        disabled={isSetPending}
+                        {...registerSet("weight")}
+                      />
+                      <FieldError>{setErrors.weight?.message}</FieldError>
+                    </Field>
+                    <Field>
+                      <FieldLabel
+                        htmlFor={`set-effort-${sessionExercise._id}`}
+                        className="text-[10px]"
+                      >
+                        Effort (1–10)
+                      </FieldLabel>
+                      <Input
+                        id={`set-effort-${sessionExercise._id}`}
+                        type="number"
+                        min={1}
+                        max={10}
+                        placeholder="7"
+                        className="h-7 text-xs"
+                        disabled={isSetPending}
+                        {...registerSet("effortLevel")}
+                      />
+                      <FieldError>{setErrors.effortLevel?.message}</FieldError>
+                    </Field>
+                  </>
+                )}
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <Field>
-                  <FieldLabel
-                    htmlFor={`set-rir-${sessionExercise._id}`}
-                    className="text-[10px]"
-                  >
-                    RIR
-                  </FieldLabel>
-                  <Input
-                    id={`set-rir-${sessionExercise._id}`}
-                    type="number"
-                    min={0}
-                    max={20}
-                    placeholder="2"
-                    className="h-7 text-xs"
-                    disabled={isSetPending}
-                    {...registerSet("rir")}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel
-                    htmlFor={`set-dur-${sessionExercise._id}`}
-                    className="text-[10px]"
-                  >
-                    Duration (s)
-                  </FieldLabel>
-                  <Input
-                    id={`set-dur-${sessionExercise._id}`}
-                    type="number"
-                    min={0}
-                    placeholder="60"
-                    className="h-7 text-xs"
-                    disabled={isSetPending}
-                    {...registerSet("durationSeconds")}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel
-                    htmlFor={`set-dist-${sessionExercise._id}`}
-                    className="text-[10px]"
-                  >
-                    Distance
-                  </FieldLabel>
-                  <Input
-                    id={`set-dist-${sessionExercise._id}`}
-                    type="number"
-                    min={0}
-                    step="0.1"
-                    placeholder="5.0"
-                    className="h-7 text-xs"
-                    disabled={isSetPending}
-                    {...registerSet("distance")}
-                  />
-                </Field>
-              </div>
+              {!isCardio && (
+                <div className="grid grid-cols-3 gap-2">
+                  <Field>
+                    <FieldLabel
+                      htmlFor={`set-rir-${sessionExercise._id}`}
+                      className="text-[10px]"
+                    >
+                      RIR
+                    </FieldLabel>
+                    <Input
+                      id={`set-rir-${sessionExercise._id}`}
+                      type="number"
+                      min={0}
+                      max={20}
+                      placeholder="2"
+                      className="h-7 text-xs"
+                      disabled={isSetPending}
+                      {...registerSet("rir")}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel
+                      htmlFor={`set-dur-${sessionExercise._id}`}
+                      className="text-[10px]"
+                    >
+                      Duration (s)
+                    </FieldLabel>
+                    <Input
+                      id={`set-dur-${sessionExercise._id}`}
+                      type="number"
+                      min={0}
+                      placeholder="60"
+                      className="h-7 text-xs"
+                      disabled={isSetPending}
+                      {...registerSet("durationSeconds")}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel
+                      htmlFor={`set-dist-${sessionExercise._id}`}
+                      className="text-[10px]"
+                    >
+                      Distance
+                    </FieldLabel>
+                    <Input
+                      id={`set-dist-${sessionExercise._id}`}
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      placeholder="5.0"
+                      className="h-7 text-xs"
+                      disabled={isSetPending}
+                      {...registerSet("distance")}
+                    />
+                  </Field>
+                </div>
+              )}
 
               <div className="flex items-center gap-3">
                 <Field>
@@ -1117,19 +1269,21 @@ function SessionExerciseItem({
                   />
                 </Field>
 
-                <div className="flex items-center gap-2 pt-4">
-                  <Checkbox
-                    id={`set-warmup-${sessionExercise._id}`}
-                    disabled={isSetPending}
-                    {...registerSet("isWarmup")}
-                  />
-                  <Label
-                    htmlFor={`set-warmup-${sessionExercise._id}`}
-                    className="text-[10px] cursor-pointer"
-                  >
-                    Warmup
-                  </Label>
-                </div>
+                {!isCardio && (
+                  <div className="flex items-center gap-2 pt-4">
+                    <Checkbox
+                      id={`set-warmup-${sessionExercise._id}`}
+                      disabled={isSetPending}
+                      {...registerSet("isWarmup")}
+                    />
+                    <Label
+                      htmlFor={`set-warmup-${sessionExercise._id}`}
+                      className="text-[10px] cursor-pointer"
+                    >
+                      Warmup
+                    </Label>
+                  </div>
+                )}
               </div>
 
               {setFormState.message && (

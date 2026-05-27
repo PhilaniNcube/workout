@@ -14,6 +14,7 @@ export default defineSchema({
 		name: v.string(),
 		muscleGroup: v.optional(v.union(v.null(), v.id("muscleGroups"))),
 		equipment: v.optional(v.union(v.null(), v.string())),
+		exerciseType: v.string(),
 		isArchived: v.boolean(),
 		photoStorageId: v.optional(v.union(v.null(), v.id("_storage"))),
 		machineNotes: v.optional(v.union(v.null(), v.string())),
@@ -22,7 +23,8 @@ export default defineSchema({
 		updatedAt: v.number(),
 	})
 		.index("by_name", ["name"])
-		.index("by_isArchived", ["isArchived"]),
+		.index("by_isArchived", ["isArchived"])
+		.index("by_exerciseType", ["exerciseType"]),
 
 	workoutSessions: defineTable({
 		ownerTokenIdentifier: v.string(),

@@ -14,6 +14,15 @@ import {
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (mins > 0) {
+    return `${mins}m ${secs}s`
+  }
+  return `${secs}s`
+}
+
 export default function WeightReferenceCard() {
   const weights = useQuery(api.exercises.getLastUsedWeights, { limit: 20 })
 
@@ -78,13 +87,30 @@ export default function WeightReferenceCard() {
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-sm font-bold tabular-nums">
-                  {w.lastWeight} kg
-                </p>
-                {w.lastReps != null && (
-                  <p className="text-muted-foreground text-xs tabular-nums">
-                    {w.lastReps} reps
-                  </p>
+                {w.exerciseType === "cardio" ? (
+                  <>
+                    {w.lastDurationSeconds != null && (
+                      <p className="text-sm font-bold tabular-nums">
+                        {formatDuration(w.lastDurationSeconds)}
+                      </p>
+                    )}
+                    {w.lastDistance != null && (
+                      <p className="text-muted-foreground text-xs tabular-nums">
+                        {w.lastDistance} km
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-bold tabular-nums">
+                      {w.lastWeight} kg
+                    </p>
+                    {w.lastReps != null && (
+                      <p className="text-muted-foreground text-xs tabular-nums">
+                        {w.lastReps} reps
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </Link>
