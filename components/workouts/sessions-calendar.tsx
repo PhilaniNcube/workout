@@ -51,17 +51,17 @@ export default function SessionsCalendar() {
         <h3 className="text-lg font-semibold">
           {format(weekStart, "MMM d")} – {format(weekEnd, "MMM d, yyyy")}
         </h3>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            size="icon"
+            className="h-10 w-10 p-0"
             onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           </Button>
           <Button
             variant="outline"
-            size="sm"
+            className="h-10"
             onClick={() =>
               setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
             }
@@ -70,10 +70,10 @@ export default function SessionsCalendar() {
           </Button>
           <Button
             variant="outline"
-            size="icon"
+            className="h-10 w-10 p-0"
             onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
       </div>

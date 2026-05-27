@@ -84,8 +84,8 @@ function TemplateItem({
   });
 
   return (
-    <div className="flex items-center gap-3 rounded-md border p-3">
-      <Bookmark className="text-muted-foreground h-4 w-4 shrink-0" />
+    <div className="flex items-center gap-3 rounded-md border p-3 min-h-[60px]">
+      <Bookmark className="text-muted-foreground h-5 w-5 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{template.name}</p>
         {details ? (
@@ -106,20 +106,19 @@ function TemplateItem({
       <Button
         type="button"
         variant="outline"
-        size="sm"
-        className="h-7 shrink-0 text-[10px]"
+        className="h-10 shrink-0 text-sm"
         disabled={isStarting}
         onClick={onStart}
       >
-        <Play className="mr-1 h-3 w-3" />
+        <Play className="mr-1 h-4 w-4" />
         {isStarting ? "Starting..." : "Start"}
       </Button>
       <button
         type="button"
-        className="text-muted-foreground hover:text-destructive rounded p-1 transition-colors shrink-0"
+        className="text-muted-foreground hover:text-destructive rounded p-2 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
         onClick={onDelete}
       >
-        <Trash2 className="h-3 w-3" />
+        <Trash2 className="h-4 w-4" />
       </button>
     </div>
   );

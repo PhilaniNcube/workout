@@ -91,7 +91,7 @@ export default function ExercisesList() {
                 <li key={exercise._id}>
                   <Link
                     href={`/dashboard/exercises/${exercise._id}`}
-                    className="hover:bg-muted flex items-center justify-between gap-4 px-4 py-3 transition-colors group-data-[size=sm]/card:px-3"
+                    className="hover:bg-muted flex items-center justify-between gap-4 px-4 py-4 transition-colors group-data-[size=sm]/card:px-3 min-h-[52px]"
                   >
                     <div className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-2">

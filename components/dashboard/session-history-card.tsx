@@ -69,7 +69,7 @@ export default function SessionHistoryCard() {
                 onClick={() =>
                   setExpandedId(isExpanded ? null : entry.session._id)
                 }
-                className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+                className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50 min-h-[56px]"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">

@@ -314,7 +314,7 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
         <button
           type="button"
           className={cn(
-            "w-full rounded-md px-2 py-1 text-left text-xs transition-colors",
+            "w-full rounded-md px-3 py-3 text-left text-sm transition-colors min-h-[44px]",
             isFinished
               ? "bg-muted/40 text-muted-foreground hover:bg-muted/60"
               : "bg-primary/10 text-primary hover:bg-primary/20",
@@ -324,16 +324,16 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
             {format(new Date(session.startedAt), "h:mm a")}
           </span>
           {isFinished && (
-            <span className="ml-1 text-[9px] text-green-600 font-medium">
+            <span className="ml-2 text-xs text-green-600 font-medium">
               Done
             </span>
           )}
           {sessionExercises && sessionExercises.length > 0 && (
-            <div className="mt-0.5 space-y-0.5">
+            <div className="mt-1 space-y-0.5">
               {sessionExercises.map((se) => {
                 const exercise = exerciseMap.get(se.exerciseId);
                 return (
-                  <p key={se._id} className="text-muted-foreground truncate text-[10px]">
+                  <p key={se._id} className="text-muted-foreground truncate text-xs">
                     {exercise?.name ?? "Unknown"}
                   </p>
                 );
@@ -341,7 +341,7 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
             </div>
           )}
           {session.notes && (
-            <p className="text-muted-foreground mt-0.5 truncate text-[10px] italic">
+            <p className="text-muted-foreground mt-1 truncate text-xs italic">
               {session.notes}
             </p>
           )}
@@ -930,9 +930,9 @@ function SessionExerciseItem({
       <div
         role="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/50"
+        className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50 min-h-[48px]"
       >
-        <Dumbbell className="text-muted-foreground h-4 w-4 shrink-0" />
+        <Dumbbell className="text-muted-foreground h-5 w-5 shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{exerciseName}</p>
           {sessionExercise.notes && (
@@ -947,7 +947,7 @@ function SessionExerciseItem({
         {!isSessionFinished && (
           <button
             type="button"
-            className="text-muted-foreground hover:text-destructive rounded p-0.5 transition-colors"
+            className="text-muted-foreground hover:text-destructive rounded p-2 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             disabled={isDeleting}
             onClick={(e) => {
               e.stopPropagation();
@@ -956,12 +956,12 @@ function SessionExerciseItem({
               });
             }}
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-4 w-4" />
           </button>
         )}
         <ChevronDown
           className={cn(
-            "text-muted-foreground h-4 w-4 shrink-0 transition-transform",
+            "text-muted-foreground h-5 w-5 shrink-0 transition-transform",
             isExpanded && "rotate-180",
           )}
         />
@@ -1047,7 +1047,7 @@ function SessionExerciseItem({
                   {!isSessionFinished && (
                     <button
                       type="button"
-                      className="text-muted-foreground hover:text-destructive rounded p-0.5 transition-colors"
+                      className="text-muted-foreground hover:text-destructive rounded p-2 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                       disabled={isDeleting}
                       onClick={() => {
                         startDeleteTransition(async () => {
@@ -1055,7 +1055,7 @@ function SessionExerciseItem({
                         });
                       }}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   )}
                   {isSessionFinished && <span />}
@@ -1078,7 +1078,7 @@ function SessionExerciseItem({
                     <Field>
                       <FieldLabel
                         htmlFor={`set-dur-${sessionExercise._id}`}
-                        className="text-[10px]"
+                        className="text-xs"
                       >
                         Duration (s)
                       </FieldLabel>
@@ -1087,7 +1087,7 @@ function SessionExerciseItem({
                         type="number"
                         min={0}
                         placeholder="1800"
-                        className="h-7 text-xs"
+                        className="h-10 text-sm"
                         disabled={isSetPending}
                         {...registerSet("durationSeconds")}
                       />
@@ -1095,7 +1095,7 @@ function SessionExerciseItem({
                     <Field>
                       <FieldLabel
                         htmlFor={`set-dist-${sessionExercise._id}`}
-                        className="text-[10px]"
+                        className="text-xs"
                       >
                         Distance (km)
                       </FieldLabel>
@@ -1105,7 +1105,7 @@ function SessionExerciseItem({
                         min={0}
                         step="0.1"
                         placeholder="5.0"
-                        className="h-7 text-xs"
+                        className="h-10 text-sm"
                         disabled={isSetPending}
                         {...registerSet("distance")}
                       />
@@ -1113,7 +1113,7 @@ function SessionExerciseItem({
                     <Field>
                       <FieldLabel
                         htmlFor={`set-effort-${sessionExercise._id}`}
-                        className="text-[10px]"
+                        className="text-xs"
                       >
                         Effort (1–10)
                       </FieldLabel>
@@ -1123,7 +1123,7 @@ function SessionExerciseItem({
                         min={1}
                         max={10}
                         placeholder="7"
-                        className="h-7 text-xs"
+                        className="h-10 text-sm"
                         disabled={isSetPending}
                         {...registerSet("effortLevel")}
                       />
@@ -1135,7 +1135,7 @@ function SessionExerciseItem({
                     <Field>
                       <FieldLabel
                         htmlFor={`set-reps-${sessionExercise._id}`}
-                        className="text-[10px]"
+                        className="text-xs"
                       >
                         Reps
                       </FieldLabel>
@@ -1144,7 +1144,7 @@ function SessionExerciseItem({
                         type="number"
                         min={1}
                         placeholder="10"
-                        className="h-7 text-xs"
+                        className="h-10 text-sm"
                         disabled={isSetPending}
                         {...registerSet("reps")}
                       />
@@ -1153,7 +1153,7 @@ function SessionExerciseItem({
                     <Field>
                       <FieldLabel
                         htmlFor={`set-weight-${sessionExercise._id}`}
-                        className="text-[10px]"
+                        className="text-xs"
                       >
                         Weight (kg)
                       </FieldLabel>
@@ -1163,7 +1163,7 @@ function SessionExerciseItem({
                         min={0}
                         step="0.5"
                         placeholder="60"
-                        className="h-7 text-xs"
+                        className="h-10 text-sm"
                         disabled={isSetPending}
                         {...registerSet("weight")}
                       />
@@ -1172,7 +1172,7 @@ function SessionExerciseItem({
                     <Field>
                       <FieldLabel
                         htmlFor={`set-effort-${sessionExercise._id}`}
-                        className="text-[10px]"
+                        className="text-xs"
                       >
                         Effort (1–10)
                       </FieldLabel>
@@ -1182,7 +1182,7 @@ function SessionExerciseItem({
                         min={1}
                         max={10}
                         placeholder="7"
-                        className="h-7 text-xs"
+                        className="h-10 text-sm"
                         disabled={isSetPending}
                         {...registerSet("effortLevel")}
                       />
@@ -1197,7 +1197,7 @@ function SessionExerciseItem({
                   <Field>
                     <FieldLabel
                       htmlFor={`set-rir-${sessionExercise._id}`}
-                      className="text-[10px]"
+                      className="text-xs"
                     >
                       RIR
                     </FieldLabel>
@@ -1207,7 +1207,7 @@ function SessionExerciseItem({
                       min={0}
                       max={20}
                       placeholder="2"
-                      className="h-7 text-xs"
+                      className="h-10 text-sm"
                       disabled={isSetPending}
                       {...registerSet("rir")}
                     />
@@ -1215,7 +1215,7 @@ function SessionExerciseItem({
                   <Field>
                     <FieldLabel
                       htmlFor={`set-dur-${sessionExercise._id}`}
-                      className="text-[10px]"
+                      className="text-xs"
                     >
                       Duration (s)
                     </FieldLabel>
@@ -1224,7 +1224,7 @@ function SessionExerciseItem({
                       type="number"
                       min={0}
                       placeholder="60"
-                      className="h-7 text-xs"
+                      className="h-10 text-sm"
                       disabled={isSetPending}
                       {...registerSet("durationSeconds")}
                     />
@@ -1232,7 +1232,7 @@ function SessionExerciseItem({
                   <Field>
                     <FieldLabel
                       htmlFor={`set-dist-${sessionExercise._id}`}
-                      className="text-[10px]"
+                      className="text-xs"
                     >
                       Distance
                     </FieldLabel>
@@ -1242,7 +1242,7 @@ function SessionExerciseItem({
                       min={0}
                       step="0.1"
                       placeholder="5.0"
-                      className="h-7 text-xs"
+                      className="h-10 text-sm"
                       disabled={isSetPending}
                       {...registerSet("distance")}
                     />
@@ -1254,7 +1254,7 @@ function SessionExerciseItem({
                 <Field>
                   <FieldLabel
                     htmlFor={`set-rest-${sessionExercise._id}`}
-                    className="text-[10px]"
+                    className="text-xs"
                   >
                     Rest (s)
                   </FieldLabel>
@@ -1263,7 +1263,7 @@ function SessionExerciseItem({
                     type="number"
                     min={0}
                     placeholder="90"
-                    className="h-7 w-20 text-xs"
+                    className="h-10 w-24 text-sm"
                     disabled={isSetPending}
                     {...registerSet("restSeconds")}
                   />
@@ -1278,7 +1278,7 @@ function SessionExerciseItem({
                     />
                     <Label
                       htmlFor={`set-warmup-${sessionExercise._id}`}
-                      className="text-[10px] cursor-pointer"
+                      className="text-sm cursor-pointer"
                     >
                       Warmup
                     </Label>
@@ -1295,12 +1295,11 @@ function SessionExerciseItem({
                   {setFormState.message}
                 </FieldError>
               )}
-              <div className="flex justify-end gap-1">
+              <div className="flex justify-end gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
-                  className="h-6 text-[10px]"
+                  className="h-10 text-sm"
                   disabled={isSetPending}
                   onClick={() => setShowAddSet(false)}
                 >
@@ -1308,8 +1307,7 @@ function SessionExerciseItem({
                 </Button>
                 <Button
                   type="submit"
-                  size="sm"
-                  className="h-6 text-[10px]"
+                  className="h-10 text-sm"
                   disabled={isSetPending}
                 >
                   {isSetPending ? "Adding..." : "Add set"}
@@ -1321,11 +1319,10 @@ function SessionExerciseItem({
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
-                className="mt-1 h-6 w-full text-[10px]"
+                className="mt-2 h-10 w-full text-sm"
                 onClick={() => setShowAddSet(true)}
               >
-                <Plus className="mr-1 h-3 w-3" />
+                <Plus className="mr-1 h-4 w-4" />
                 Add set
               </Button>
             )
@@ -1349,8 +1346,7 @@ function SaveTemplateForm({ sessionId }: { sessionId: Id<"workoutSessions"> }) {
         <Button
           type="button"
           variant="ghost"
-          size="sm"
-          className="w-full text-[10px]"
+          className="w-full h-10 text-sm"
           onClick={() => setShow(true)}
         >
           Save as template
@@ -1364,15 +1360,14 @@ function SaveTemplateForm({ sessionId }: { sessionId: Id<"workoutSessions"> }) {
       <div className="flex items-center gap-2 rounded border p-2">
         <Input
           placeholder="Template name..."
-          className="h-7 text-xs"
+          className="h-10 text-sm"
           value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={saving}
         />
         <Button
           type="button"
-          size="sm"
-          className="h-7 text-[10px] shrink-0"
+          className="h-10 text-sm shrink-0"
           disabled={saving || !name.trim()}
           onClick={() => {
             startSave(async () => {
@@ -1387,8 +1382,7 @@ function SaveTemplateForm({ sessionId }: { sessionId: Id<"workoutSessions"> }) {
         <Button
           type="button"
           variant="ghost"
-          size="sm"
-          className="h-7 text-[10px] shrink-0"
+          className="h-10 text-sm shrink-0"
           disabled={saving}
           onClick={() => setShow(false)}
         >
