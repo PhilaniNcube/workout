@@ -96,7 +96,7 @@ export default function ExercisesList() {
                     <div className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{exercise.name}</span>
-                        {exercise.exerciseType !== "strength" && (
+                        {(exercise.exerciseType ?? "strength") !== "strength" && (
                           <span className="text-muted-foreground rounded border px-1.5 py-0.5 text-[10px] font-medium capitalize">
                             {exercise.exerciseType}
                           </span>

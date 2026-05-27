@@ -32,7 +32,7 @@ export default async function Exercise({
       })
     : null
 
-  const isStrength = exercise.exerciseType === "strength"
+  const isStrength = (exercise.exerciseType ?? "strength") === "strength"
 
   return (
     <div className="flex flex-col gap-6">
@@ -44,7 +44,7 @@ export default async function Exercise({
           <CardContent className="flex flex-col gap-4">
             <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
               <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
-                {formatExerciseType(exercise.exerciseType)}
+                {formatExerciseType(exercise.exerciseType ?? "strength")}
               </span>
               {muscleGroup && <span>Muscle group: {muscleGroup.name}</span>}
               {exercise.equipment && (

@@ -60,7 +60,7 @@ export default function ExerciseHistory({
     );
   }
 
-  const isStrength = exercise?.exerciseType === "strength";
+  const isStrength = (exercise?.exerciseType ?? "strength") === "strength";
   const isCardio = exercise?.exerciseType === "cardio";
 
   return (

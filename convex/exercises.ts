@@ -252,7 +252,7 @@ export const getLastUsedWeights = query({
 			results.push({
 				exerciseId: exercise._id,
 				exerciseName: exercise.name,
-				exerciseType: exercise.exerciseType,
+				exerciseType: exercise.exerciseType ?? "strength",
 				muscleGroupName,
 				equipment: exercise.equipment ?? null,
 				lastWeight: lastSet.weight ?? null,
