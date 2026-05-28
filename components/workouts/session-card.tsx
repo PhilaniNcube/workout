@@ -1,11 +1,17 @@
-"use client";
+"use client"
 
-import { useActionState, useState, useEffect, useRef, useTransition } from "react";
-import { useQuery } from "convex/react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { format } from "date-fns";
+import {
+  useActionState,
+  useState,
+  useEffect,
+  useRef,
+  useTransition,
+} from "react"
+import { useQuery } from "convex/react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { format } from "date-fns"
 import {
   Check,
   ChevronDown,
@@ -15,7 +21,7 @@ import {
   Trash2,
   Timer,
   Flag,
-} from "lucide-react";
+} from "lucide-react"
 
 import {
   addExerciseWithSetAction,
@@ -23,11 +29,11 @@ import {
   deleteSetAction,
   deleteSessionExerciseAction,
   finishSessionAction,
-} from "@/actions/workout-sessions";
-import { saveTemplateFromSessionAction } from "@/actions/templates";
-import { api } from "@/convex/_generated/api";
-import type { Id, Doc } from "@/convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
+} from "@/actions/workout-sessions"
+import { saveTemplateFromSessionAction } from "@/actions/templates"
+import { api } from "@/convex/_generated/api"
+import type { Id, Doc } from "@/convex/_generated/dataModel"
+import { Button } from "@/components/ui/button"
 import {
   Sheet,
   SheetContent,
@@ -35,25 +41,25 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@/components/ui/sheet"
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover"
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-} from "@/components/ui/drawer";
+} from "@/components/ui/drawer"
 import {
   Command,
   CommandEmpty,
@@ -61,13 +67,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/command"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
 
-type WorkoutSession = Doc<"workoutSessions">;
+type WorkoutSession = Doc<"workoutSessions">
 
 const addExerciseSchema = z.object({
   exerciseId: z.string().min(1, "Please select an exercise"),
@@ -95,7 +101,7 @@ const addExerciseSchema = z.object({
     .trim()
     .max(500, "Notes must be 500 characters or fewer")
     .optional(),
-});
+})
 
 const addExerciseFormSchema = z.object({
   exerciseId: z.string().min(1, "Please select an exercise"),
@@ -106,25 +112,29 @@ const addExerciseFormSchema = z.object({
   distance: z.string().optional(),
   rir: z.string().optional(),
   isWarmup: z.boolean().optional(),
-  notes: z.string().trim().max(500, "Notes must be 500 characters or fewer").optional(),
-});
+  notes: z
+    .string()
+    .trim()
+    .max(500, "Notes must be 500 characters or fewer")
+    .optional(),
+})
 
-type AddExerciseValues = z.infer<typeof addExerciseFormSchema>;
+type AddExerciseValues = z.infer<typeof addExerciseFormSchema>
 
 type AddExerciseState = {
-  success: boolean;
-  message: string | null;
-};
+  success: boolean
+  message: string | null
+}
 
 const initialState: AddExerciseState = {
   success: false,
   message: null,
-};
+}
 
 async function submitAddExercise(
   sessionId: Id<"workoutSessions">,
   _prevState: AddExerciseState,
-  formData: FormData,
+  formData: FormData
 ): Promise<AddExerciseState> {
   const values = {
     exerciseId: String(formData.get("exerciseId") ?? ""),
@@ -136,22 +146,22 @@ async function submitAddExercise(
     rir: String(formData.get("rir") ?? ""),
     isWarmup: formData.get("isWarmup") === "on",
     notes: String(formData.get("notes") ?? ""),
-  };
+  }
 
-  const parsed = addExerciseSchema.safeParse(values);
+  const parsed = addExerciseSchema.safeParse(values)
   if (!parsed.success) {
-    const fieldErrors = parsed.error.flatten().fieldErrors;
+    const fieldErrors = parsed.error.flatten().fieldErrors
     const firstError =
       fieldErrors.exerciseId?.[0] ??
       fieldErrors.reps?.[0] ??
       fieldErrors.weight?.[0] ??
       fieldErrors.effortLevel?.[0] ??
-      "Invalid input.";
-    return { success: false, message: firstError };
+      "Invalid input."
+    return { success: false, message: firstError }
   }
 
   const notes =
-    parsed.data.notes && parsed.data.notes !== "" ? parsed.data.notes : null;
+    parsed.data.notes && parsed.data.notes !== "" ? parsed.data.notes : null
 
   const result = await addExerciseWithSetAction(
     sessionId,
@@ -160,92 +170,98 @@ async function submitAddExercise(
       reps: parsed.data.reps ?? null,
       weight: parsed.data.weight ?? null,
       effortLevel: parsed.data.effortLevel ?? null,
-      durationSeconds: parsed.data.durationSeconds ? Number(parsed.data.durationSeconds) : null,
+      durationSeconds: parsed.data.durationSeconds
+        ? Number(parsed.data.durationSeconds)
+        : null,
       distance: parsed.data.distance ? Number(parsed.data.distance) : null,
       rir: parsed.data.rir ? Number(parsed.data.rir) : null,
       isWarmup: parsed.data.isWarmup,
     },
-    notes,
-  );
+    notes
+  )
 
   if (!result.success) {
-    return { success: false, message: result.message };
+    return { success: false, message: result.message }
   }
 
-  return { success: true, message: "Set added." };
+  return { success: true, message: "Set added." }
 }
 
 export default function SessionCard({ session }: { session: WorkoutSession }) {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [expandedExerciseId, setExpandedExerciseId] = useState<Id<"workoutSessionExercises"> | null>(null);
-  const [isFinishing, startFinishTransition] = useTransition();
-  const isMobile = useIsMobile();
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [expandedExerciseId, setExpandedExerciseId] =
+    useState<Id<"workoutSessionExercises"> | null>(null)
+  const [isFinishing, startFinishTransition] = useTransition()
+  const isMobile = useIsMobile()
 
-  const isFinished = session.endedAt != null;
+  const isFinished = session.endedAt != null
 
   const sessionExercises = useQuery(
     api.workoutSessionExercises.listForSession,
-    { sessionId: session._id },
-  );
+    { sessionId: session._id }
+  )
 
-  const exercises = useQuery(api.exercises.list, {});
-  const muscleGroups = useQuery(api.muscleGroups.list, {});
+  const exercises = useQuery(api.exercises.list, {})
+  const muscleGroups = useQuery(api.muscleGroups.list, {})
+  const suggestions = useQuery(api.workoutSessions.suggestNextExercises, {
+    limit: 6,
+  })
 
-  const exerciseMap = new Map(
-    exercises?.map((e) => [e._id, e]) ?? [],
-  );
+  const exerciseMap = new Map(exercises?.map((e) => [e._id, e]) ?? [])
 
-  const muscleGroupMap = new Map(
-    muscleGroups?.map((mg) => [mg._id, mg]) ?? [],
-  );
+  const muscleGroupMap = new Map(muscleGroups?.map((mg) => [mg._id, mg]) ?? [])
 
   const exercisesByGroup = (() => {
-    if (!exercises) return [];
-    const grouped = new Map<string, { label: string; exercises: typeof exercises }>();
-    const ungrouped: typeof exercises = [];
+    if (!exercises) return []
+    const grouped = new Map<
+      string,
+      { label: string; exercises: typeof exercises }
+    >()
+    const ungrouped: typeof exercises = []
 
     for (const ex of exercises) {
       if (ex.muscleGroup) {
-        const mg = muscleGroupMap.get(ex.muscleGroup);
-        const key = ex.muscleGroup;
+        const mg = muscleGroupMap.get(ex.muscleGroup)
+        const key = ex.muscleGroup
         const group = grouped.get(key) ?? {
           label: mg?.name ?? "Unknown",
           exercises: [],
-        };
-        group.exercises.push(ex);
-        grouped.set(key, group);
+        }
+        group.exercises.push(ex)
+        grouped.set(key, group)
       } else {
-        ungrouped.push(ex);
+        ungrouped.push(ex)
       }
     }
 
-    const result = Array.from(grouped.values());
+    const result = Array.from(grouped.values())
     if (ungrouped.length > 0) {
-      result.push({ label: "Uncategorized", exercises: ungrouped });
+      result.push({ label: "Uncategorized", exercises: ungrouped })
     }
-    return result;
-  })();
+    return result
+  })()
 
   const boundSubmit = async (
     prevState: AddExerciseState,
-    formData: FormData,
+    formData: FormData
   ) => {
-    const result = await submitAddExercise(session._id, prevState, formData);
+    const result = await submitAddExercise(session._id, prevState, formData)
     if (result.success) {
-      setShowAddForm(false);
+      setShowAddForm(false)
     }
-    return result;
-  };
+    return result
+  }
 
   const [state, formAction, isPending] = useActionState(
     boundSubmit,
-    initialState,
-  );
+    initialState
+  )
 
   const {
     register,
     control,
     watch,
+    setValue,
     clearErrors,
     setError,
     formState: { errors },
@@ -262,14 +278,19 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
       isWarmup: false,
       notes: "",
     },
-  });
+  })
 
-  const selectedExerciseId = watch("exerciseId");
+  const selectedExerciseId = watch("exerciseId")
   const selectedExercise = selectedExerciseId
     ? exerciseMap.get(selectedExerciseId as Id<"exercises">)
-    : null;
-  const selectedExerciseType = selectedExercise?.exerciseType ?? "strength";
-  const isCardioExercise = selectedExerciseType === "cardio";
+    : null
+  const selectedExerciseType = selectedExercise?.exerciseType ?? "strength"
+  const isCardioExercise = selectedExerciseType === "cardio"
+
+  const handleSuggestionClick = (exerciseId: string) => {
+    setValue("exerciseId", exerciseId)
+    setShowAddForm(true)
+  }
 
   const submitAction = async (formData: FormData) => {
     const parsed = addExerciseSchema.safeParse({
@@ -282,31 +303,34 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
       rir: String(formData.get("rir") ?? ""),
       isWarmup: formData.get("isWarmup") === "on",
       notes: String(formData.get("notes") ?? ""),
-    });
+    })
 
     if (!parsed.success) {
-      const fieldErrors = parsed.error.flatten().fieldErrors;
+      const fieldErrors = parsed.error.flatten().fieldErrors
       if (fieldErrors.exerciseId?.[0]) {
         setError("exerciseId", {
           type: "manual",
           message: fieldErrors.exerciseId[0],
-        });
+        })
       }
       if (fieldErrors.reps?.[0]) {
-        setError("reps", { type: "manual", message: fieldErrors.reps[0] });
+        setError("reps", { type: "manual", message: fieldErrors.reps[0] })
       }
       if (fieldErrors.weight?.[0]) {
-        setError("weight", { type: "manual", message: fieldErrors.weight[0] });
+        setError("weight", { type: "manual", message: fieldErrors.weight[0] })
       }
       if (fieldErrors.effortLevel?.[0]) {
-        setError("effortLevel", { type: "manual", message: fieldErrors.effortLevel[0] });
+        setError("effortLevel", {
+          type: "manual",
+          message: fieldErrors.effortLevel[0],
+        })
       }
-      return;
+      return
     }
 
-    clearErrors();
-    formAction(formData);
-  };
+    clearErrors()
+    formAction(formData)
+  }
 
   return (
     <Sheet>
@@ -314,34 +338,37 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
         <button
           type="button"
           className={cn(
-            "w-full rounded-md px-3 py-3 text-left text-sm transition-colors min-h-[44px]",
+            "min-h-[44px] w-full rounded-md px-3 py-3 text-left text-sm transition-colors",
             isFinished
               ? "bg-muted/40 text-muted-foreground hover:bg-muted/60"
-              : "bg-primary/10 text-primary hover:bg-primary/20",
+              : "bg-primary/10 text-primary hover:bg-primary/20"
           )}
         >
           <span className="font-medium">
             {format(new Date(session.startedAt), "h:mm a")}
           </span>
           {isFinished && (
-            <span className="ml-2 text-xs text-green-600 font-medium">
+            <span className="ml-2 text-xs font-medium text-green-600">
               Done
             </span>
           )}
           {sessionExercises && sessionExercises.length > 0 && (
             <div className="mt-1 space-y-0.5">
               {sessionExercises.map((se) => {
-                const exercise = exerciseMap.get(se.exerciseId);
+                const exercise = exerciseMap.get(se.exerciseId)
                 return (
-                  <p key={se._id} className="text-muted-foreground truncate text-xs">
+                  <p
+                    key={se._id}
+                    className="truncate text-xs text-muted-foreground"
+                  >
                     {exercise?.name ?? "Unknown"}
                   </p>
-                );
+                )
               })}
             </div>
           )}
           {session.notes && (
-            <p className="text-muted-foreground mt-1 truncate text-xs italic">
+            <p className="mt-1 truncate text-xs text-muted-foreground italic">
               {session.notes}
             </p>
           )}
@@ -355,7 +382,10 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                 Session – {format(new Date(session.startedAt), "MMM d, h:mm a")}
                 {isFinished && (
                   <span className="ml-2 inline-flex items-center rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                    Finished {session.endedAt ? format(new Date(session.endedAt), "h:mm a") : ""}
+                    Finished{" "}
+                    {session.endedAt
+                      ? format(new Date(session.endedAt), "h:mm a")
+                      : ""}
                   </span>
                 )}
               </SheetTitle>
@@ -363,7 +393,7 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                 {session.notes ?? "No notes for this session."}
               </SheetDescription>
               {session.perceivedEffort != null && (
-                <p className="text-muted-foreground mt-1 text-xs">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Perceived effort: {session.perceivedEffort}/10
                 </p>
               )}
@@ -377,8 +407,8 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                 disabled={isFinishing}
                 onClick={() => {
                   startFinishTransition(async () => {
-                    await finishSessionAction(session._id);
-                  });
+                    await finishSessionAction(session._id)
+                  })
                 }}
               >
                 <Flag className="mr-1 h-3.5 w-3.5" />
@@ -410,16 +440,16 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
             </div>
 
             {sessionExercises === undefined ? (
-              <p className="text-muted-foreground text-xs">Loading...</p>
+              <p className="text-xs text-muted-foreground">Loading...</p>
             ) : sessionExercises.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
+              <p className="text-sm text-muted-foreground">
                 No exercises yet. Add one to get started.
               </p>
             ) : (
               <div className="space-y-1">
                 {sessionExercises.map((se, index) => {
-                  const exercise = exerciseMap.get(se.exerciseId);
-                  const isExpanded = expandedExerciseId === se._id;
+                  const exercise = exerciseMap.get(se.exerciseId)
+                  const isExpanded = expandedExerciseId === se._id
                   return (
                     <SessionExerciseItem
                       key={se._id}
@@ -433,11 +463,45 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                         setExpandedExerciseId(isExpanded ? null : se._id)
                       }
                     />
-                  );
+                  )
                 })}
               </div>
             )}
           </div>
+
+          {!isFinished &&
+            suggestions &&
+            suggestions.recommendations.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Suggested for today
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {suggestions.recommendations.map((item) => (
+                    <button
+                      key={item.exerciseId}
+                      type="button"
+                      className="inline-flex cursor-pointer items-center rounded-full border border-border/60 px-2.5 py-1 text-xs transition-colors hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => handleSuggestionClick(item.exerciseId)}
+                      title={item.reason}
+                    >
+                      <Plus className="mr-1 h-3 w-3" />
+                      {item.exerciseName}
+                      {item.isCompound && (
+                        <span className="ml-1 rounded-full border border-border px-1 text-[9px] leading-none text-muted-foreground">
+                          C
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {suggestions.blockedMuscleGroups.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Resting: {suggestions.blockedMuscleGroups.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
 
           {showAddForm && !isFinished && (
             <form
@@ -472,7 +536,9 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                   {isCardioExercise ? (
                     <>
                       <Field>
-                        <FieldLabel htmlFor="session-exercise-dur">Duration (s)</FieldLabel>
+                        <FieldLabel htmlFor="session-exercise-dur">
+                          Duration (s)
+                        </FieldLabel>
                         <Input
                           id="session-exercise-dur"
                           type="number"
@@ -484,7 +550,9 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                       </Field>
 
                       <Field>
-                        <FieldLabel htmlFor="session-exercise-dist">Distance (km)</FieldLabel>
+                        <FieldLabel htmlFor="session-exercise-dist">
+                          Distance (km)
+                        </FieldLabel>
                         <Input
                           id="session-exercise-dist"
                           type="number"
@@ -516,7 +584,9 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                   ) : (
                     <>
                       <Field>
-                        <FieldLabel htmlFor="session-exercise-reps">Reps</FieldLabel>
+                        <FieldLabel htmlFor="session-exercise-reps">
+                          Reps
+                        </FieldLabel>
                         <Input
                           id="session-exercise-reps"
                           type="number"
@@ -570,7 +640,9 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                   {!isCardioExercise && (
                     <>
                       <Field>
-                        <FieldLabel htmlFor="session-exercise-dur">Duration (s)</FieldLabel>
+                        <FieldLabel htmlFor="session-exercise-dur">
+                          Duration (s)
+                        </FieldLabel>
                         <Input
                           id="session-exercise-dur"
                           type="number"
@@ -582,7 +654,9 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                       </Field>
 
                       <Field>
-                        <FieldLabel htmlFor="session-exercise-dist">Distance</FieldLabel>
+                        <FieldLabel htmlFor="session-exercise-dist">
+                          Distance
+                        </FieldLabel>
                         <Input
                           id="session-exercise-dist"
                           type="number"
@@ -595,7 +669,9 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                       </Field>
 
                       <Field>
-                        <FieldLabel htmlFor="session-exercise-rir">RIR</FieldLabel>
+                        <FieldLabel htmlFor="session-exercise-rir">
+                          RIR
+                        </FieldLabel>
                         <Input
                           id="session-exercise-rir"
                           type="number"
@@ -623,7 +699,10 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
                             onCheckedChange={field.onChange}
                             disabled={isPending}
                           />
-                          <Label htmlFor="session-exercise-warmup" className="text-sm cursor-pointer">
+                          <Label
+                            htmlFor="session-exercise-warmup"
+                            className="cursor-pointer text-sm"
+                          >
                             Warmup set
                           </Label>
                         </div>
@@ -673,71 +752,77 @@ export default function SessionCard({ session }: { session: WorkoutSession }) {
         </div>
       </SheetContent>
     </Sheet>
-  );
+  )
 }
 
 /* ── Rest Timer Component ── */
 
 function RestTimer({ restSeconds }: { restSeconds: number }) {
-  const [remaining, setRemaining] = useState(restSeconds);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [remaining, setRemaining] = useState(restSeconds)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current)
 
-    if (restSeconds <= 0) return;
+    if (restSeconds <= 0) return
 
     intervalRef.current = setInterval(() => {
       setRemaining((prev) => {
         if (prev <= 1) {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          return 0;
+          if (intervalRef.current) clearInterval(intervalRef.current)
+          return 0
         }
-        return prev - 1;
-      });
-    }, 1000);
+        return prev - 1
+      })
+    }, 1000)
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [restSeconds]);
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [restSeconds])
 
-  if (restSeconds <= 0) return null;
+  if (restSeconds <= 0) return null
 
-  const progress = remaining / restSeconds;
-  const minutes = Math.floor(remaining / 60);
-  const seconds = remaining % 60;
-  const displayTime = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  const isComplete = remaining === 0;
+  const progress = remaining / restSeconds
+  const minutes = Math.floor(remaining / 60)
+  const seconds = remaining % 60
+  const displayTime = `${minutes}:${seconds.toString().padStart(2, "0")}`
+  const isComplete = remaining === 0
 
   return (
-    <div className={cn(
-      "rounded-md p-2 text-center transition-colors",
-      isComplete ? "bg-green-100 dark:bg-green-900/20" : "bg-primary/5",
-    )}>
+    <div
+      className={cn(
+        "rounded-md p-2 text-center transition-colors",
+        isComplete ? "bg-green-100 dark:bg-green-900/20" : "bg-primary/5"
+      )}
+    >
       <div className="flex items-center justify-center gap-1.5">
-        <Timer className={cn(
-          "h-3.5 w-3.5",
-          isComplete ? "text-green-600" : "text-primary",
-        )} />
-        <span className={cn(
-          "text-xs font-medium tabular-nums",
-          isComplete ? "text-green-600" : "text-primary",
-        )}>
+        <Timer
+          className={cn(
+            "h-3.5 w-3.5",
+            isComplete ? "text-green-600" : "text-primary"
+          )}
+        />
+        <span
+          className={cn(
+            "text-xs font-medium tabular-nums",
+            isComplete ? "text-green-600" : "text-primary"
+          )}
+        >
           {isComplete ? "Rest Complete!" : `Rest: ${displayTime}`}
         </span>
       </div>
-      <div className="mt-1 h-1 w-full rounded-full bg-muted overflow-hidden">
+      <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
         <div
           className={cn(
             "h-full rounded-full transition-[width] duration-1000 ease-linear",
-            isComplete ? "bg-green-500" : "bg-primary",
+            isComplete ? "bg-green-500" : "bg-primary"
           )}
           style={{ width: `${100 - progress * 100}%` }}
         />
       </div>
     </div>
-  );
+  )
 }
 
 /* ── Session Exercise Item (expandable with sets) ── */
@@ -763,7 +848,7 @@ const addSetSchema = z.object({
   rir: z.string().optional(),
   restSeconds: z.string().optional(),
   isWarmup: z.boolean().optional(),
-});
+})
 
 const addSetFormSchema = z.object({
   reps: z.string().optional(),
@@ -774,22 +859,22 @@ const addSetFormSchema = z.object({
   rir: z.string().optional(),
   restSeconds: z.string().optional(),
   isWarmup: z.boolean().optional(),
-});
+})
 
-type AddSetFormValues = z.infer<typeof addSetFormSchema>;
+type AddSetFormValues = z.infer<typeof addSetFormSchema>
 
 type AddSetState = {
-  success: boolean;
-  message: string | null;
-};
+  success: boolean
+  message: string | null
+}
 
-const addSetInitialState: AddSetState = { success: false, message: null };
+const addSetInitialState: AddSetState = { success: false, message: null }
 
 async function submitAddSet(
   sessionExerciseId: Id<"workoutSessionExercises">,
   setNumber: number,
   _prev: AddSetState,
-  formData: FormData,
+  formData: FormData
 ): Promise<AddSetState> {
   const values = {
     reps: String(formData.get("reps") ?? ""),
@@ -800,29 +885,35 @@ async function submitAddSet(
     rir: String(formData.get("rir") ?? ""),
     restSeconds: String(formData.get("restSeconds") ?? ""),
     isWarmup: formData.get("isWarmup") === "on",
-  };
-  const parsed = addSetSchema.safeParse(values);
+  }
+  const parsed = addSetSchema.safeParse(values)
 
   if (!parsed.success) {
-    const fe = parsed.error.flatten().fieldErrors;
+    const fe = parsed.error.flatten().fieldErrors
     return {
       success: false,
-      message: fe.reps?.[0] ?? fe.weight?.[0] ?? fe.effortLevel?.[0] ?? "Invalid input.",
-    };
+      message:
+        fe.reps?.[0] ??
+        fe.weight?.[0] ??
+        fe.effortLevel?.[0] ??
+        "Invalid input.",
+    }
   }
 
   const result = await addSetAction(sessionExerciseId, setNumber, {
     reps: parsed.data.reps ?? null,
     weight: parsed.data.weight ?? null,
     effortLevel: parsed.data.effortLevel ?? null,
-    durationSeconds: parsed.data.durationSeconds ? Number(parsed.data.durationSeconds) : null,
+    durationSeconds: parsed.data.durationSeconds
+      ? Number(parsed.data.durationSeconds)
+      : null,
     distance: parsed.data.distance ? Number(parsed.data.distance) : null,
     rir: parsed.data.rir ? Number(parsed.data.rir) : null,
     isWarmup: parsed.data.isWarmup,
-  });
+  })
 
-  if (!result.success) return { success: false, message: result.message };
-  return { success: true, message: "Set added." };
+  if (!result.success) return { success: false, message: result.message }
+  return { success: true, message: "Set added." }
 }
 
 function SessionExerciseItem({
@@ -834,48 +925,46 @@ function SessionExerciseItem({
   isSessionFinished,
   onToggle,
 }: {
-  sessionExercise: Doc<"workoutSessionExercises">;
-  exerciseName: string;
-  exerciseType: string;
-  index: number;
-  isExpanded: boolean;
-  isSessionFinished: boolean;
-  onToggle: () => void;
+  sessionExercise: Doc<"workoutSessionExercises">
+  exerciseName: string
+  exerciseType: string
+  index: number
+  isExpanded: boolean
+  isSessionFinished: boolean
+  onToggle: () => void
 }) {
-  const isCardio = exerciseType === "cardio";
-  const [showAddSet, setShowAddSet] = useState(false);
-  const [isDeleting, startDeleteTransition] = useTransition();
-  const [timerRest, setTimerRest] = useState<number>(0);
+  const isCardio = exerciseType === "cardio"
+  const [showAddSet, setShowAddSet] = useState(false)
+  const [isDeleting, startDeleteTransition] = useTransition()
+  const [timerRest, setTimerRest] = useState<number>(0)
 
   const sets = useQuery(
     api.sets.listForSessionExercise,
-    isExpanded
-      ? { workoutSessionExerciseId: sessionExercise._id }
-      : "skip",
-  );
+    isExpanded ? { workoutSessionExerciseId: sessionExercise._id } : "skip"
+  )
 
   const boundSubmitSet = async (prev: AddSetState, formData: FormData) => {
-    const nextSetNumber = (sets?.length ?? 0) + 1;
+    const nextSetNumber = (sets?.length ?? 0) + 1
     const result = await submitAddSet(
       sessionExercise._id,
       nextSetNumber,
       prev,
-      formData,
-    );
+      formData
+    )
     if (result.success) {
-      setShowAddSet(false);
-      const restVal = formData.get("restSeconds");
+      setShowAddSet(false)
+      const restVal = formData.get("restSeconds")
       if (restVal && String(restVal) !== "") {
-        setTimerRest(Number(restVal));
+        setTimerRest(Number(restVal))
       }
     }
-    return result;
-  };
+    return result
+  }
 
   const [setFormState, setFormAction, isSetPending] = useActionState(
     boundSubmitSet,
-    addSetInitialState,
-  );
+    addSetInitialState
+  )
 
   const {
     register: registerSet,
@@ -885,11 +974,16 @@ function SessionExerciseItem({
   } = useForm<AddSetFormValues>({
     resolver: zodResolver(addSetFormSchema),
     defaultValues: {
-      reps: "", weight: "", effortLevel: "",
-      durationSeconds: "", distance: "", rir: "", restSeconds: "",
+      reps: "",
+      weight: "",
+      effortLevel: "",
+      durationSeconds: "",
+      distance: "",
+      rir: "",
+      restSeconds: "",
       isWarmup: false,
     },
-  });
+  })
 
   const submitSetAction = async (formData: FormData) => {
     const values = {
@@ -901,59 +995,60 @@ function SessionExerciseItem({
       rir: String(formData.get("rir") ?? ""),
       restSeconds: String(formData.get("restSeconds") ?? ""),
       isWarmup: formData.get("isWarmup") === "on",
-    };
-    const parsed = addSetSchema.safeParse(values);
-    if (!parsed.success) {
-      const fe = parsed.error.flatten().fieldErrors;
-      if (fe.reps?.[0])
-        setSetError("reps", { type: "manual", message: fe.reps[0] });
-      if (fe.weight?.[0])
-        setSetError("weight", { type: "manual", message: fe.weight[0] });
-      if (fe.effortLevel?.[0])
-        setSetError("effortLevel", { type: "manual", message: fe.effortLevel[0] });
-      return;
     }
-    clearSetErrors();
-    setFormAction(formData);
-  };
+    const parsed = addSetSchema.safeParse(values)
+    if (!parsed.success) {
+      const fe = parsed.error.flatten().fieldErrors
+      if (fe.reps?.[0])
+        setSetError("reps", { type: "manual", message: fe.reps[0] })
+      if (fe.weight?.[0])
+        setSetError("weight", { type: "manual", message: fe.weight[0] })
+      if (fe.effortLevel?.[0])
+        setSetError("effortLevel", {
+          type: "manual",
+          message: fe.effortLevel[0],
+        })
+      return
+    }
+    clearSetErrors()
+    setFormAction(formData)
+  }
 
   const hasExtraFields = sets?.some(
     (s) =>
       s.durationSeconds != null ||
       s.distance != null ||
       s.rir != null ||
-      s.isWarmup,
-  );
+      s.isWarmup
+  )
 
   return (
     <div className="rounded-md border">
       <div
         role="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50 min-h-[48px]"
+        className="flex min-h-[48px] w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50"
       >
-        <Dumbbell className="text-muted-foreground h-5 w-5 shrink-0" />
+        <Dumbbell className="h-5 w-5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{exerciseName}</p>
           {sessionExercise.notes && (
-            <p className="text-muted-foreground truncate text-xs">
+            <p className="truncate text-xs text-muted-foreground">
               {sessionExercise.notes}
             </p>
           )}
         </div>
-        <span className="text-muted-foreground text-xs">
-          #{index + 1}
-        </span>
+        <span className="text-xs text-muted-foreground">#{index + 1}</span>
         {!isSessionFinished && (
           <button
             type="button"
-            className="text-muted-foreground hover:text-destructive rounded p-2 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded p-2 text-muted-foreground transition-colors hover:text-destructive"
             disabled={isDeleting}
             onClick={(e) => {
-              e.stopPropagation();
+              e.stopPropagation()
               startDeleteTransition(async () => {
-                await deleteSessionExerciseAction(sessionExercise._id);
-              });
+                await deleteSessionExerciseAction(sessionExercise._id)
+              })
             }}
           >
             <Trash2 className="h-4 w-4" />
@@ -961,8 +1056,8 @@ function SessionExerciseItem({
         )}
         <ChevronDown
           className={cn(
-            "text-muted-foreground h-5 w-5 shrink-0 transition-transform",
-            isExpanded && "rotate-180",
+            "h-5 w-5 shrink-0 text-muted-foreground transition-transform",
+            isExpanded && "rotate-180"
           )}
         />
       </div>
@@ -970,19 +1065,19 @@ function SessionExerciseItem({
       {isExpanded && (
         <div className="border-t px-3 py-2">
           {sets === undefined ? (
-            <p className="text-muted-foreground text-xs">Loading sets...</p>
+            <p className="text-xs text-muted-foreground">Loading sets...</p>
           ) : sets.length === 0 ? (
-            <p className="text-muted-foreground text-xs">No sets recorded.</p>
+            <p className="text-xs text-muted-foreground">No sets recorded.</p>
           ) : (
             <div className="mb-2">
               <div
                 className={cn(
-                  "text-muted-foreground grid gap-2 text-[10px] font-medium uppercase",
+                  "grid gap-2 text-[10px] font-medium text-muted-foreground uppercase",
                   isCardio
                     ? "grid-cols-[1fr_1fr_1fr_1fr_auto]"
                     : hasExtraFields
                       ? "grid-cols-[1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.5fr_0.5fr_auto]"
-                      : "grid-cols-[1fr_1fr_1fr_1fr_auto]",
+                      : "grid-cols-[1fr_1fr_1fr_1fr_auto]"
                 )}
               >
                 <span>{isCardio ? "Interval" : "Set"}</span>
@@ -1018,27 +1113,39 @@ function SessionExerciseItem({
                       : hasExtraFields
                         ? "grid-cols-[1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.5fr_0.5fr_auto]"
                         : "grid-cols-[1fr_1fr_1fr_1fr_auto]",
-                    !isCardio && s.isWarmup && "text-muted-foreground italic",
+                    !isCardio && s.isWarmup && "text-muted-foreground italic"
                   )}
                 >
-                  <span>
-                    {!isCardio && s.isWarmup ? "W" : s.setNumber}
-                  </span>
+                  <span>{!isCardio && s.isWarmup ? "W" : s.setNumber}</span>
                   {isCardio ? (
                     <>
-                      <span>{s.durationSeconds != null ? `${Math.floor(s.durationSeconds / 60)}m ${s.durationSeconds % 60}s` : "–"}</span>
-                      <span>{s.distance != null ? `${s.distance} km` : "–"}</span>
-                      <span>{s.effortLevel != null ? `${s.effortLevel}/10` : "–"}</span>
+                      <span>
+                        {s.durationSeconds != null
+                          ? `${Math.floor(s.durationSeconds / 60)}m ${s.durationSeconds % 60}s`
+                          : "–"}
+                      </span>
+                      <span>
+                        {s.distance != null ? `${s.distance} km` : "–"}
+                      </span>
+                      <span>
+                        {s.effortLevel != null ? `${s.effortLevel}/10` : "–"}
+                      </span>
                     </>
                   ) : (
                     <>
                       <span>{s.reps ?? "–"}</span>
                       <span>{s.weight != null ? `${s.weight} kg` : "–"}</span>
-                      <span>{s.effortLevel != null ? `${s.effortLevel}/10` : "–"}</span>
+                      <span>
+                        {s.effortLevel != null ? `${s.effortLevel}/10` : "–"}
+                      </span>
                       {hasExtraFields && (
                         <>
                           <span>{s.rir != null ? s.rir : "–"}</span>
-                          <span>{s.durationSeconds != null ? `${s.durationSeconds}s` : "–"}</span>
+                          <span>
+                            {s.durationSeconds != null
+                              ? `${s.durationSeconds}s`
+                              : "–"}
+                          </span>
                           <span>{s.distance != null ? s.distance : "–"}</span>
                         </>
                       )}
@@ -1047,12 +1154,12 @@ function SessionExerciseItem({
                   {!isSessionFinished && (
                     <button
                       type="button"
-                      className="text-muted-foreground hover:text-destructive rounded p-2 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded p-2 text-muted-foreground transition-colors hover:text-destructive"
                       disabled={isDeleting}
                       onClick={() => {
                         startDeleteTransition(async () => {
-                          await deleteSetAction(s._id);
-                        });
+                          await deleteSetAction(s._id)
+                        })
                       }}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1064,7 +1171,9 @@ function SessionExerciseItem({
             </div>
           )}
 
-          {timerRest > 0 && <RestTimer key={timerRest} restSeconds={timerRest} />}
+          {timerRest > 0 && (
+            <RestTimer key={timerRest} restSeconds={timerRest} />
+          )}
 
           {showAddSet && !isSessionFinished ? (
             <form
@@ -1278,7 +1387,7 @@ function SessionExerciseItem({
                     />
                     <Label
                       htmlFor={`set-warmup-${sessionExercise._id}`}
-                      className="text-sm cursor-pointer"
+                      className="cursor-pointer text-sm"
                     >
                       Warmup
                     </Label>
@@ -1330,15 +1439,15 @@ function SessionExerciseItem({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 /* ── Save as Template Form ── */
 
 function SaveTemplateForm({ sessionId }: { sessionId: Id<"workoutSessions"> }) {
-  const [show, setShow] = useState(false);
-  const [name, setName] = useState("");
-  const [saving, startSave] = useTransition();
+  const [show, setShow] = useState(false)
+  const [name, setName] = useState("")
+  const [saving, startSave] = useTransition()
 
   if (!show) {
     return (
@@ -1346,13 +1455,13 @@ function SaveTemplateForm({ sessionId }: { sessionId: Id<"workoutSessions"> }) {
         <Button
           type="button"
           variant="ghost"
-          className="w-full h-10 text-sm"
+          className="h-10 w-full text-sm"
           onClick={() => setShow(true)}
         >
           Save as template
         </Button>
       </div>
-    );
+    )
   }
 
   return (
@@ -1367,14 +1476,14 @@ function SaveTemplateForm({ sessionId }: { sessionId: Id<"workoutSessions"> }) {
         />
         <Button
           type="button"
-          className="h-10 text-sm shrink-0"
+          className="h-10 shrink-0 text-sm"
           disabled={saving || !name.trim()}
           onClick={() => {
             startSave(async () => {
-              await saveTemplateFromSessionAction(sessionId, name.trim());
-              setShow(false);
-              setName("");
-            });
+              await saveTemplateFromSessionAction(sessionId, name.trim())
+              setShow(false)
+              setName("")
+            })
           }}
         >
           {saving ? "Saving..." : "Save"}
@@ -1382,7 +1491,7 @@ function SaveTemplateForm({ sessionId }: { sessionId: Id<"workoutSessions"> }) {
         <Button
           type="button"
           variant="ghost"
-          className="h-10 text-sm shrink-0"
+          className="h-10 shrink-0 text-sm"
           disabled={saving}
           onClick={() => setShow(false)}
         >
@@ -1390,20 +1499,20 @@ function SaveTemplateForm({ sessionId }: { sessionId: Id<"workoutSessions"> }) {
         </Button>
       </div>
     </div>
-  );
+  )
 }
 
 /* ── Exercise Combobox ── */
 
 type ExerciseComboboxProps = {
-  value: string;
-  onChange: (value: string) => void;
-  exercisesByGroup: { label: string; exercises: Doc<"exercises">[] }[];
-  exerciseMap: Map<Id<"exercises">, Doc<"exercises">>;
-  disabled?: boolean;
-  isMobile: boolean;
-  hasError?: boolean;
-};
+  value: string
+  onChange: (value: string) => void
+  exercisesByGroup: { label: string; exercises: Doc<"exercises">[] }[]
+  exerciseMap: Map<Id<"exercises">, Doc<"exercises">>
+  disabled?: boolean
+  isMobile: boolean
+  hasError?: boolean
+}
 
 function ExerciseCombobox({
   value,
@@ -1414,16 +1523,16 @@ function ExerciseCombobox({
   isMobile,
   hasError,
 }: ExerciseComboboxProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
   const selectedExercise = value
     ? exerciseMap.get(value as Id<"exercises">)
-    : undefined;
+    : undefined
 
   const handleSelect = (exerciseId: string) => {
-    onChange(exerciseId);
-    setOpen(false);
-  };
+    onChange(exerciseId)
+    setOpen(false)
+  }
 
   const commandList = (
     <Command>
@@ -1441,7 +1550,7 @@ function ExerciseCombobox({
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    value === ex._id ? "opacity-100" : "opacity-0",
+                    value === ex._id ? "opacity-100" : "opacity-0"
                   )}
                 />
                 {ex.name}
@@ -1451,7 +1560,7 @@ function ExerciseCombobox({
         ))}
       </CommandList>
     </Command>
-  );
+  )
 
   const triggerButton = (
     <Button
@@ -1468,7 +1577,7 @@ function ExerciseCombobox({
       </span>
       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
     </Button>
-  );
+  )
 
   if (isMobile) {
     return (
@@ -1503,7 +1612,7 @@ function ExerciseCombobox({
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              value === ex._id ? "opacity-100" : "opacity-0",
+                              value === ex._id ? "opacity-100" : "opacity-0"
                             )}
                           />
                           {ex.name}
@@ -1517,7 +1626,7 @@ function ExerciseCombobox({
           </DrawerContent>
         </Drawer>
       </>
-    );
+    )
   }
 
   return (
@@ -1525,10 +1634,13 @@ function ExerciseCombobox({
       <input type="hidden" name="exerciseId" value={value} />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent
+          className="w-[--radix-popover-trigger-width] p-0"
+          align="start"
+        >
           {commandList}
         </PopoverContent>
       </Popover>
     </>
-  );
+  )
 }
