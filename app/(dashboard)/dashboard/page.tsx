@@ -7,6 +7,7 @@ import WeeklyVolumeCard from "@/components/dashboard/weekly-volume-card"
 import MuscleBalanceCard from "@/components/dashboard/muscle-balance-card"
 import WeightReferenceCard from "@/components/dashboard/weight-reference-card"
 import SessionHistoryCard from "@/components/dashboard/session-history-card"
+import MuscleGroups from "@/components/muscle-groups/muscle-groups"
 import React from "react"
 
 const DashboardPage = () => {
@@ -20,7 +21,10 @@ const DashboardPage = () => {
         <WeeklyVolumeCard />
         <MuscleBalanceCard />
       </div>
-      <WeightReferenceCard />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <MuscleGroups />
+        <WeightReferenceCard />
+      </div>
       <SessionHistoryCard />
       <SuggestedNextExercisesCard />
       <PersonalBestsByMuscleGroupCard />
