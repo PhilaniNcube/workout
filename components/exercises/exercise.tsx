@@ -53,6 +53,7 @@ export default async function Exercise({
                   setupNotes: exercise.setupNotes ?? null,
                   photoUrl: exercise.photoUrl ?? null,
                   photoStorageId: exercise.photoStorageId ?? null,
+                  isCompound: exercise.isCompound,
                 }}
               />
             </div>
@@ -62,6 +63,11 @@ export default async function Exercise({
               <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
                 {formatExerciseType(exercise.exerciseType ?? "strength")}
               </span>
+              {exercise.isCompound && (
+                <span className="rounded-full border border-primary/40 px-2 py-0.5 text-xs font-medium text-primary">
+                  Compound
+                </span>
+              )}
               {muscleGroup && <span>Muscle group: {muscleGroup.name}</span>}
               {exercise.equipment && (
                 <span>Equipment: {exercise.equipment}</span>

@@ -55,6 +55,7 @@ const editExerciseSchema = z.object({
     .trim()
     .max(500, "Setup notes must be 500 characters or fewer")
     .optional(),
+  isCompound: z.boolean().optional(),
 })
 
 type EditExerciseValues = z.infer<typeof editExerciseSchema>
@@ -83,6 +84,7 @@ export default function EditExercise({
     setupNotes: string | null
     photoUrl: string | null
     photoStorageId: Id<"_storage"> | null
+    isCompound: boolean | undefined
   }
 }) {
   const [open, setOpen] = useState(false)
@@ -244,6 +246,7 @@ export default function EditExercise({
       exerciseType: parsed.data.exerciseType,
       machineNotes,
       setupNotes,
+      isCompound: formData.get("isCompound") === "true",
       ...(photoStorageId !== undefined ? { photoStorageId } : {}),
     })
 
@@ -275,6 +278,7 @@ export default function EditExercise({
       exerciseType: exercise.exerciseType ?? "strength",
       machineNotes: exercise.machineNotes ?? "",
       setupNotes: exercise.setupNotes ?? "",
+      isCompound: exercise.isCompound ?? false,
     },
   })
 
@@ -389,6 +393,26 @@ export default function EditExercise({
                 <option value="plyometric">Plyometric</option>
               </select>
               <FieldError>{errors.exerciseType?.message}</FieldError>
+            </Field>
+
+            <Field>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-exercise-is-compound"
+                  name="isCompound"
+                  value="true"
+                  className="size-4 rounded border-input accent-primary"
+                  disabled={isPending}
+                  defaultChecked={exercise.isCompound ?? false}
+                />
+                <FieldLabel
+                  htmlFor="edit-exercise-is-compound"
+                  className="!mt-0"
+                >
+                  Compound exercise (multi-joint)
+                </FieldLabel>
+              </div>
             </Field>
 
             <Field>

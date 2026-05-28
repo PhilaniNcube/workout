@@ -18,31 +18,47 @@ export default async function MuscleGroup({
   })
 
   if (muscleGroup === null) {
-     notFound()
+    notFound()
   }
 
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{muscleGroup.name}</CardTitle>
-                <UpdateMuscleGroup muscleGroup={muscleGroup} />
-            </CardHeader>
-            <CardContent>
-                {muscleGroup.illustrationUrl ? (
-                    <Image
-                        src={muscleGroup.illustrationUrl}
-                        alt={`${muscleGroup.name} illustration`}
-                        width={400}
-                        height={400}
-                        unoptimized
-                        className="rounded-md"
-                    />
-                ) : (
-                    <p className="text-sm text-muted-foreground">
-                        No illustration uploaded yet.
-                    </p>
-                )}
-            </CardContent>
-        </Card>
-    )
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>{muscleGroup.name}</CardTitle>
+          {(muscleGroup.category || muscleGroup.region) && (
+            <div className="mt-1 flex gap-1">
+              {muscleGroup.category && (
+                <span className="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  {muscleGroup.category}
+                </span>
+              )}
+              {muscleGroup.region && (
+                <span className="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  {muscleGroup.region}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <UpdateMuscleGroup muscleGroup={muscleGroup} />
+      </CardHeader>
+      <CardContent>
+        {muscleGroup.illustrationUrl ? (
+          <Image
+            src={muscleGroup.illustrationUrl}
+            alt={`${muscleGroup.name} illustration`}
+            width={400}
+            height={400}
+            unoptimized
+            className="rounded-md"
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No illustration uploaded yet.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  )
 }

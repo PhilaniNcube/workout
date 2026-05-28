@@ -53,6 +53,7 @@ const addExerciseSchema = z.object({
     .trim()
     .max(500, "Setup notes must be 500 characters or fewer")
     .optional(),
+  isCompound: z.boolean().optional(),
 })
 
 type AddExerciseValues = z.infer<typeof addExerciseSchema>
@@ -81,6 +82,8 @@ async function submitAddExercise(
   }
 
   const parsed = addExerciseSchema.safeParse(values)
+
+  const isCompound = formData.get("isCompound") === "true"
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors
     const firstError =
@@ -123,7 +126,8 @@ async function submitAddExercise(
     parsed.data.exerciseType,
     machineNotes,
     setupNotes,
-    photoStorageId
+    photoStorageId,
+    isCompound
   )
 
   if (!result.success) {
@@ -156,6 +160,7 @@ export default function AddExercise() {
       exerciseType: "strength",
       machineNotes: "",
       setupNotes: "",
+      isCompound: false,
     },
   })
 
@@ -248,6 +253,7 @@ export default function AddExercise() {
       exerciseType: String(formData.get("exerciseType") ?? "strength"),
       machineNotes: String(formData.get("machineNotes") ?? ""),
       setupNotes: String(formData.get("setupNotes") ?? ""),
+      isCompound: formData.get("isCompound") === "true",
     })
 
     if (!parsed.success) {
@@ -345,6 +351,23 @@ export default function AddExercise() {
                 <option value="plyometric">Plyometric</option>
               </select>
               <FieldError>{errors.exerciseType?.message}</FieldError>
+            </Field>
+
+            <Field>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="exercise-is-compound"
+                  name="isCompound"
+                  value="true"
+                  className="size-4 rounded border-input accent-primary"
+                  disabled={isPending}
+                  defaultChecked={false}
+                />
+                <FieldLabel htmlFor="exercise-is-compound" className="!mt-0">
+                  Compound exercise (multi-joint)
+                </FieldLabel>
+              </div>
             </Field>
 
             <Field>

@@ -36,29 +36,36 @@ type MuscleGroupData = {
 export default function UpdateMuscleGroup({
   muscleGroup,
 }: {
-  muscleGroup: MuscleGroupData
+  muscleGroup: MuscleGroupData & {
+    category?: string | null
+    region?: string | null
+  }
 }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(muscleGroup.name)
+  const [category, setCategory] = useState(muscleGroup.category ?? "")
+  const [region, setRegion] = useState(muscleGroup.region ?? "")
   const [nameError, setNameError] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
 
   // Illustration state
   const [previewUrl, setPreviewUrl] = useState<string | null>(
-    muscleGroup.illustrationUrl,
+    muscleGroup.illustrationUrl
   )
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [removeIllustration, setRemoveIllustration] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const generateUploadUrl = useMutation(
-    api.muscleGroups.generateIllustrationUploadUrl,
+    api.muscleGroups.generateIllustrationUploadUrl
   )
   const updateMuscleGroup = useMutation(api.muscleGroups.update)
 
   function resetForm() {
     setName(muscleGroup.name)
+    setCategory(muscleGroup.category ?? "")
+    setRegion(muscleGroup.region ?? "")
     setNameError(null)
     setServerError(null)
     setPreviewUrl(muscleGroup.illustrationUrl)
@@ -145,6 +152,8 @@ export default function UpdateMuscleGroup({
       await updateMuscleGroup({
         muscleGroupId: muscleGroup._id,
         name: trimmed,
+        category: category || null,
+        region: region || null,
         ...(illustrationStorageId !== undefined
           ? { illustrationStorageId }
           : {}),
@@ -157,7 +166,7 @@ export default function UpdateMuscleGroup({
       setServerError(
         error instanceof Error
           ? error.message
-          : "Unable to update muscle group.",
+          : "Unable to update muscle group."
       )
     } finally {
       setIsPending(false)
@@ -195,6 +204,44 @@ export default function UpdateMuscleGroup({
                 disabled={isPending}
               />
               {nameError && <FieldError>{nameError}</FieldError>}
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="update-mg-category">
+                Movement Category
+              </FieldLabel>
+              <select
+                id="update-mg-category"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                disabled={isPending}
+              >
+                <option value="">Uncategorized</option>
+                <option value="push">Push</option>
+                <option value="pull">Pull</option>
+                <option value="legs">Legs</option>
+                <option value="core">Core</option>
+                <option value="cardio">Cardio</option>
+                <option value="full">Full Body</option>
+              </select>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="update-mg-region">Body Region</FieldLabel>
+              <select
+                id="update-mg-region"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                disabled={isPending}
+              >
+                <option value="">Uncategorized</option>
+                <option value="upper">Upper Body</option>
+                <option value="lower">Lower Body</option>
+                <option value="core">Core</option>
+                <option value="full">Full Body</option>
+              </select>
             </Field>
 
             <Field>

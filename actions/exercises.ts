@@ -31,7 +31,8 @@ export async function addExerciseAction(
   exerciseType?: string,
   machineNotes?: string | null,
   setupNotes?: string | null,
-  photoStorageId?: Id<"_storage"> | null
+  photoStorageId?: Id<"_storage"> | null,
+  isCompound?: boolean
 ): Promise<ExerciseActionResult> {
   try {
     const exerciseId = await fetchAuthMutation(api.exercises.create, {
@@ -42,6 +43,7 @@ export async function addExerciseAction(
       ...(machineNotes !== undefined ? { machineNotes } : {}),
       ...(setupNotes !== undefined ? { setupNotes } : {}),
       ...(photoStorageId !== undefined ? { photoStorageId } : {}),
+      ...(isCompound !== undefined ? { isCompound } : {}),
     })
 
     return {
@@ -66,6 +68,7 @@ export async function updateExerciseAction(
     photoStorageId?: Id<"_storage"> | null
     machineNotes?: string | null
     setupNotes?: string | null
+    isCompound?: boolean
   }
 ): Promise<ExerciseActionResult> {
   try {

@@ -44,9 +44,14 @@ export default function MuscleGroups() {
               <Link
                 href={`/dashboard/muscle-groups/${group._id}`}
                 key={group._id}
-                className="flex items-center justify-between rounded-none px-2 py-1.5 text-xs hover:bg-muted"
+                className="flex items-center justify-between rounded-md px-2 py-1.5 text-xs hover:bg-muted"
               >
                 <span>{group.name}</span>
+                {group.category && (
+                  <span className="rounded-full border px-1.5 py-0 text-[10px] font-medium text-muted-foreground">
+                    {group.category}
+                  </span>
+                )}
               </Link>
             ))}
           </ul>

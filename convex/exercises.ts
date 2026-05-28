@@ -61,6 +61,7 @@ export const create = mutation({
     machineNotes: nullableString,
     setupNotes: nullableString,
     photoStorageId: nullableStorageId,
+    isCompound: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireTokenIdentifier(ctx)
@@ -74,6 +75,7 @@ export const create = mutation({
       machineNotes: args.machineNotes ?? null,
       setupNotes: args.setupNotes ?? null,
       photoStorageId: args.photoStorageId ?? null,
+      isCompound: args.isCompound ?? false,
       createdAt: now,
       updatedAt: now,
     })
@@ -90,6 +92,7 @@ export const update = mutation({
     photoStorageId: nullableStorageId,
     machineNotes: nullableString,
     setupNotes: nullableString,
+    isCompound: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireTokenIdentifier(ctx)
@@ -110,6 +113,7 @@ export const update = mutation({
       patch.photoStorageId = args.photoStorageId
     if (args.machineNotes !== undefined) patch.machineNotes = args.machineNotes
     if (args.setupNotes !== undefined) patch.setupNotes = args.setupNotes
+    if (args.isCompound !== undefined) patch.isCompound = args.isCompound
 
     await ctx.db.patch(args.exerciseId, patch)
     return args.exerciseId
@@ -272,5 +276,76 @@ export const getLastUsedWeights = query({
 
     results.sort((a, b) => (b.lastDate ?? 0) - (a.lastDate ?? 0))
     return results.slice(0, limit)
+  },
+})
+
+const COMPOUND_KEYWORDS = [
+  "bench press",
+  "squat",
+  "deadlift",
+  "pull up",
+  "pull-up",
+  "pullup",
+  "chin up",
+  "chin-up",
+  "chinup",
+  "overhead press",
+  "military press",
+  "barbell row",
+  "bent over row",
+  "bent-over row",
+  "t-bar row",
+  "pendlay row",
+  "dip",
+  "lunge",
+  "bulgarian split squat",
+  "leg press",
+  "clean",
+  "snatch",
+  "push press",
+  "push jerk",
+  "thruster",
+  "romanian deadlift",
+  "rdl",
+  "stiff leg deadlift",
+  "good morning",
+  "upright row",
+]
+
+export const populateCompounds = mutation({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireTokenIdentifier(ctx)
+    const limit = Math.min(Math.max(args.limit ?? 200, 1), 500)
+    const exercises = await ctx.db
+      .query("exercises")
+      .withIndex("by_isArchived", (q) => q.eq("isArchived", false))
+      .take(limit)
+
+    let updated = 0
+    let skipped = 0
+    for (const exercise of exercises) {
+      const lower = exercise.name.toLowerCase().trim()
+      const isCompound = COMPOUND_KEYWORDS.some((kw) => lower.includes(kw))
+
+      if (isCompound) {
+        await ctx.db.patch(exercise._id, {
+          isCompound: true,
+          updatedAt: Date.now(),
+        })
+        updated += 1
+      } else {
+        skipped += 1
+      }
+    }
+
+    return {
+      processed: exercises.length,
+      updated,
+      skipped,
+      hasMore: exercises.length === limit,
+    }
   },
 })
