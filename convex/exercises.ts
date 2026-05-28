@@ -317,7 +317,6 @@ export const populateCompounds = mutation({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireTokenIdentifier(ctx)
     const limit = Math.min(Math.max(args.limit ?? 200, 1), 500)
     const exercises = await ctx.db
       .query("exercises")
