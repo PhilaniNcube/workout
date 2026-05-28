@@ -51,12 +51,14 @@ export default async function Exercise({
                   exerciseType: exercise.exerciseType ?? "strength",
                   machineNotes: exercise.machineNotes ?? null,
                   setupNotes: exercise.setupNotes ?? null,
+                  photoUrl: exercise.photoUrl ?? null,
+                  photoStorageId: exercise.photoStorageId ?? null,
                 }}
               />
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
                 {formatExerciseType(exercise.exerciseType ?? "strength")}
               </span>
@@ -77,7 +79,7 @@ export default async function Exercise({
             )}
             {exercise.photoUrl && (
               <div>
-                <p className="text-muted-foreground mb-1 text-xs font-medium">
+                <p className="mb-1 text-xs font-medium text-muted-foreground">
                   Machine photo
                 </p>
                 <Image
@@ -92,7 +94,7 @@ export default async function Exercise({
             )}
             {exercise.machineNotes && (
               <div>
-                <p className="text-muted-foreground mb-1 text-xs font-medium">
+                <p className="mb-1 text-xs font-medium text-muted-foreground">
                   Machine identification
                 </p>
                 <p className="rounded-md border bg-muted/30 p-2 text-sm whitespace-pre-wrap">
@@ -102,7 +104,7 @@ export default async function Exercise({
             )}
             {exercise.setupNotes && (
               <div>
-                <p className="text-muted-foreground mb-1 text-xs font-medium">
+                <p className="mb-1 text-xs font-medium text-muted-foreground">
                   Setup notes
                 </p>
                 <p className="rounded-md border bg-muted/30 p-2 text-sm whitespace-pre-wrap">
@@ -115,13 +117,15 @@ export default async function Exercise({
               !exercise.machineNotes &&
               !exercise.setupNotes &&
               !exercise.photoUrl && (
-                <p className="text-muted-foreground text-sm">
+                <p className="text-sm text-muted-foreground">
                   No details added yet.
                 </p>
               )}
           </CardContent>
         </Card>
-        {isStrength && <EstimatedOneRepMax exerciseId={id as Id<"exercises">} />}
+        {isStrength && (
+          <EstimatedOneRepMax exerciseId={id as Id<"exercises">} />
+        )}
       </div>
       <ExerciseHistory exerciseId={id as Id<"exercises">} />
     </div>
