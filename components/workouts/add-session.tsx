@@ -25,6 +25,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NumberStepper } from "@/components/ui/number-stepper";
 
 const addSessionSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -228,9 +229,8 @@ export default function AddSession() {
               <FieldLabel htmlFor="session-effort">
                 Perceived Effort (1–10)
               </FieldLabel>
-              <Input
+              <NumberStepper
                 id="session-effort"
-                type="number"
                 min={1}
                 max={10}
                 placeholder="e.g. 7"

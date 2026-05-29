@@ -43,6 +43,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { NumberStepper } from "@/components/ui/number-stepper"
 import {
   Popover,
   PopoverContent,
@@ -491,16 +492,15 @@ export default function SessionDetail({
                 <FieldError>{errors.exerciseId?.message}</FieldError>
               </Field>
 
-              <div className="grid grid-cols-3 gap-2">
-                {isCardioExercise ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
+              {isCardioExercise ? (
                   <>
                     <Field>
                       <FieldLabel htmlFor="session-exercise-dur">
                         Duration (s)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id="session-exercise-dur"
-                        type="number"
                         min={0}
                         placeholder="e.g. 1800"
                         disabled={isPending}
@@ -512,11 +512,10 @@ export default function SessionDetail({
                       <FieldLabel htmlFor="session-exercise-dist">
                         Distance (km)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id="session-exercise-dist"
-                        type="number"
                         min={0}
-                        step="0.1"
+                        step={0.1}
                         placeholder="e.g. 5.0"
                         disabled={isPending}
                         {...register("distance")}
@@ -527,9 +526,8 @@ export default function SessionDetail({
                       <FieldLabel htmlFor="session-exercise-effort">
                         Effort (1–10)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id="session-exercise-effort"
-                        type="number"
                         min={1}
                         max={10}
                         placeholder="e.g. 7"
@@ -546,9 +544,8 @@ export default function SessionDetail({
                       <FieldLabel htmlFor="session-exercise-reps">
                         Reps
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id="session-exercise-reps"
-                        type="number"
                         min={1}
                         placeholder="e.g. 10"
                         aria-invalid={errors.reps ? true : undefined}
@@ -562,11 +559,10 @@ export default function SessionDetail({
                       <FieldLabel htmlFor="session-exercise-weight">
                         Weight (kg)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id="session-exercise-weight"
-                        type="number"
                         min={0}
-                        step="0.5"
+                        step={0.5}
                         placeholder="e.g. 60"
                         aria-invalid={errors.weight ? true : undefined}
                         disabled={isPending}
@@ -579,9 +575,8 @@ export default function SessionDetail({
                       <FieldLabel htmlFor="session-exercise-effort">
                         Effort (1–10)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id="session-exercise-effort"
-                        type="number"
                         min={1}
                         max={10}
                         placeholder="e.g. 7"
@@ -595,16 +590,15 @@ export default function SessionDetail({
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
                 {!isCardioExercise && (
                   <>
                     <Field>
                       <FieldLabel htmlFor="session-exercise-dur">
                         Duration (s)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id="session-exercise-dur"
-                        type="number"
                         min={0}
                         placeholder="e.g. 60"
                         disabled={isPending}
@@ -616,11 +610,10 @@ export default function SessionDetail({
                       <FieldLabel htmlFor="session-exercise-dist">
                         Distance
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id="session-exercise-dist"
-                        type="number"
                         min={0}
-                        step="0.1"
+                        step={0.1}
                         placeholder="e.g. 5.0"
                         disabled={isPending}
                         {...register("distance")}
@@ -629,11 +622,10 @@ export default function SessionDetail({
 
                     <Field>
                       <FieldLabel htmlFor="session-exercise-rir">
-                        RIR
+                        Reps In Reserve
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id="session-exercise-rir"
-                        type="number"
                         min={0}
                         max={20}
                         placeholder="e.g. 2"
@@ -1134,7 +1126,7 @@ function SessionExerciseItem({
               noValidate
               className="mt-2 space-y-2 rounded border bg-muted/30 p-2"
             >
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
                 {isCardio ? (
                   <>
                     <Field>
@@ -1144,12 +1136,11 @@ function SessionExerciseItem({
                       >
                         Duration (s)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id={`set-dur-${sessionExercise._id}`}
-                        type="number"
                         min={0}
                         placeholder="1800"
-                        className="h-10 text-sm"
+                        className="h-11 md:h-10 text-base md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("durationSeconds")}
                       />
@@ -1161,13 +1152,12 @@ function SessionExerciseItem({
                       >
                         Distance (km)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id={`set-dist-${sessionExercise._id}`}
-                        type="number"
                         min={0}
-                        step="0.1"
+                        step={0.1}
                         placeholder="5.0"
-                        className="h-10 text-sm"
+                        className="h-11 md:h-10 text-base md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("distance")}
                       />
@@ -1179,13 +1169,12 @@ function SessionExerciseItem({
                       >
                         Effort (1–10)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id={`set-effort-${sessionExercise._id}`}
-                        type="number"
                         min={1}
                         max={10}
                         placeholder="7"
-                        className="h-10 text-sm"
+                        className="h-11 md:h-10 text-base md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("effortLevel")}
                       />
@@ -1201,12 +1190,11 @@ function SessionExerciseItem({
                       >
                         Reps
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id={`set-reps-${sessionExercise._id}`}
-                        type="number"
                         min={1}
                         placeholder="10"
-                        className="h-10 text-sm"
+                        className="h-11 md:h-10 text-base md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("reps")}
                       />
@@ -1219,13 +1207,12 @@ function SessionExerciseItem({
                       >
                         Weight (kg)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id={`set-weight-${sessionExercise._id}`}
-                        type="number"
                         min={0}
-                        step="0.5"
+                        step={0.5}
                         placeholder="60"
-                        className="h-10 text-sm"
+                        className="h-11 md:h-10 text-base md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("weight")}
                       />
@@ -1238,13 +1225,12 @@ function SessionExerciseItem({
                       >
                         Effort (1–10)
                       </FieldLabel>
-                      <Input
+                      <NumberStepper
                         id={`set-effort-${sessionExercise._id}`}
-                        type="number"
                         min={1}
                         max={10}
                         placeholder="7"
-                        className="h-10 text-sm"
+                        className="h-11 md:h-10 text-base md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("effortLevel")}
                       />
@@ -1255,21 +1241,20 @@ function SessionExerciseItem({
               </div>
 
               {!isCardio && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
                   <Field>
                     <FieldLabel
                       htmlFor={`set-rir-${sessionExercise._id}`}
                       className="text-xs"
                     >
-                      RIR
+                      Reps In Reserve
                     </FieldLabel>
-                    <Input
+                    <NumberStepper
                       id={`set-rir-${sessionExercise._id}`}
-                      type="number"
                       min={0}
                       max={20}
                       placeholder="2"
-                      className="h-10 text-sm"
+                      className="h-11 md:h-10 text-base md:text-sm"
                       disabled={isSetPending}
                       {...registerSet("rir")}
                     />
@@ -1281,12 +1266,11 @@ function SessionExerciseItem({
                     >
                       Duration (s)
                     </FieldLabel>
-                    <Input
+                    <NumberStepper
                       id={`set-dur-${sessionExercise._id}`}
-                      type="number"
                       min={0}
                       placeholder="60"
-                      className="h-10 text-sm"
+                      className="h-11 md:h-10 text-base md:text-sm"
                       disabled={isSetPending}
                       {...registerSet("durationSeconds")}
                     />
@@ -1298,13 +1282,12 @@ function SessionExerciseItem({
                     >
                       Distance
                     </FieldLabel>
-                    <Input
+                    <NumberStepper
                       id={`set-dist-${sessionExercise._id}`}
-                      type="number"
                       min={0}
-                      step="0.1"
+                      step={0.1}
                       placeholder="5.0"
-                      className="h-10 text-sm"
+                      className="h-11 md:h-10 text-base md:text-sm"
                       disabled={isSetPending}
                       {...registerSet("distance")}
                     />
@@ -1320,12 +1303,12 @@ function SessionExerciseItem({
                   >
                     Rest (s)
                   </FieldLabel>
-                  <Input
+                  <NumberStepper
                     id={`set-rest-${sessionExercise._id}`}
-                    type="number"
                     min={0}
+                    step={5}
                     placeholder="90"
-                    className="h-10 w-24 text-sm"
+                    className="h-11 md:h-10 w-32 md:w-24 text-base md:text-sm"
                     disabled={isSetPending}
                     {...registerSet("restSeconds")}
                   />

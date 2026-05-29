@@ -27,6 +27,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NumberStepper } from "@/components/ui/number-stepper";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const logSchema = z.object({
@@ -178,13 +179,12 @@ export default function BodyMetricsPage() {
                     {...register("recordedAt")}
                   />
                 </Field>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field>
                     <FieldLabel htmlFor="bm-weight">Body Weight (kg)</FieldLabel>
-                    <Input
+                    <NumberStepper
                       id="bm-weight"
-                      type="number"
-                      step="0.1"
+                      step={0.1}
                       min={0}
                       placeholder="e.g. 75.5"
                       {...register("bodyWeight")}
@@ -192,10 +192,9 @@ export default function BodyMetricsPage() {
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="bm-fat">Body Fat %</FieldLabel>
-                    <Input
+                    <NumberStepper
                       id="bm-fat"
-                      type="number"
-                      step="0.1"
+                      step={0.1}
                       min={0}
                       max={60}
                       placeholder="e.g. 15.0"
@@ -205,23 +204,21 @@ export default function BodyMetricsPage() {
                 </div>
                 <Field>
                   <FieldLabel htmlFor="bm-height">Height (cm)</FieldLabel>
-                  <Input
+                  <NumberStepper
                     id="bm-height"
-                    type="number"
-                    step="0.1"
+                    step={0.1}
                     min={0}
                     max={300}
                     placeholder="e.g. 175"
                     {...register("heightCm")}
                   />
                 </Field>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field>
                     <FieldLabel htmlFor="bm-waist">Waist (cm)</FieldLabel>
-                    <Input
+                    <NumberStepper
                       id="bm-waist"
-                      type="number"
-                      step="0.1"
+                      step={0.1}
                       min={0}
                       placeholder="e.g. 80"
                       {...register("waistCm")}
@@ -229,10 +226,9 @@ export default function BodyMetricsPage() {
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="bm-chest">Chest (cm)</FieldLabel>
-                    <Input
+                    <NumberStepper
                       id="bm-chest"
-                      type="number"
-                      step="0.1"
+                      step={0.1}
                       min={0}
                       placeholder="e.g. 100"
                       {...register("chestCm")}
@@ -400,10 +396,10 @@ export default function BodyMetricsPage() {
                       <td className="py-2">
                         <button
                           type="button"
-                          className="text-muted-foreground hover:text-destructive rounded p-1 transition-colors"
+                          className="text-muted-foreground hover:text-destructive rounded-md p-2 min-h-11 min-w-11 flex items-center justify-center transition-colors hover:bg-muted/50"
                           onClick={() => deleteMetric({ metricId: m._id })}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </td>
                     </tr>

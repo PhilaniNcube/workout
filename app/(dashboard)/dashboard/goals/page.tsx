@@ -36,6 +36,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NumberStepper } from "@/components/ui/number-stepper";
 import {
   Popover,
   PopoverContent,
@@ -266,13 +267,12 @@ export default function GoalsPage() {
                   />
                 </Field>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field>
                     <FieldLabel htmlFor="goal-target">Target Value</FieldLabel>
-                    <Input
+                    <NumberStepper
                       id="goal-target"
-                      type="number"
-                      step="0.5"
+                      step={0.5}
                       placeholder="e.g. 100"
                       {...register("targetValue")}
                     />
@@ -374,7 +374,7 @@ function GoalCard({
           type="button"
           onClick={() => onToggle(goal._id)}
           className={cn(
-            "mt-0.5 shrink-0 transition-colors",
+            "mt-0.5 shrink-0 transition-colors min-h-11 min-w-11 flex items-center justify-center p-2 rounded-md hover:bg-muted/50",
             isCompleted
               ? "text-green-600 hover:text-green-700"
               : "text-muted-foreground hover:text-primary",
@@ -409,10 +409,10 @@ function GoalCard({
 
         <button
           type="button"
-          className="text-muted-foreground hover:text-destructive rounded p-1 transition-colors"
+          className="text-muted-foreground hover:text-destructive rounded-md p-2 min-h-11 min-w-11 flex items-center justify-center transition-colors hover:bg-muted/50"
           onClick={() => onRemove(goal._id)}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-4 w-4" />
         </button>
       </CardContent>
     </Card>
