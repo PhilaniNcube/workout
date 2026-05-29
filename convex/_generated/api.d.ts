@@ -13,6 +13,7 @@ import type * as bodyMetrics from "../bodyMetrics.js";
 import type * as exercises from "../exercises.js";
 import type * as goals from "../goals.js";
 import type * as googleHealth from "../googleHealth.js";
+import type * as heartRate from "../heartRate.js";
 import type * as http from "../http.js";
 import type * as lib_authz from "../lib/authz.js";
 import type * as muscleGroups from "../muscleGroups.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   exercises: typeof exercises;
   goals: typeof goals;
   googleHealth: typeof googleHealth;
+  heartRate: typeof heartRate;
   http: typeof http;
   "lib/authz": typeof lib_authz;
   muscleGroups: typeof muscleGroups;

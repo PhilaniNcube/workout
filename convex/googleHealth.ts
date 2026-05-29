@@ -1,8 +1,13 @@
-import { action, internalMutation, internalQuery, mutation } from "./_generated/server";
-import { v } from "convex/values";
-import { components } from "./_generated/api";
-import { internal } from "./_generated/api";
-import { authComponent } from "./auth";
+import {
+  action,
+  internalMutation,
+  internalQuery,
+  mutation,
+} from "./_generated/server"
+import { v } from "convex/values"
+import { components } from "./_generated/api"
+import { internal } from "./_generated/api"
+import { authComponent } from "./auth"
 
 /**
  * Internal query to fetch the Google account of the currently authenticated user.
@@ -10,9 +15,9 @@ import { authComponent } from "./auth";
 export const getGoogleAccount = internalQuery({
   args: {},
   handler: async (ctx) => {
-    const user = await authComponent.safeGetAuthUser(ctx);
+    const user = await authComponent.safeGetAuthUser(ctx)
     if (!user) {
-      return null;
+      return null
     }
 
     const account = await ctx.runQuery(components.betterAuth.adapter.findOne, {
@@ -21,11 +26,11 @@ export const getGoogleAccount = internalQuery({
         { field: "userId", value: user._id },
         { field: "providerId", value: "google" },
       ],
-    });
+    })
 
-    return account;
+    return account
   },
-});
+})
 
 /**
  * Internal mutation to update the access token (and optionally refresh token) in the component database.
@@ -49,9 +54,9 @@ export const updateGoogleAccount = internalMutation({
           updatedAt: Date.now(),
         },
       },
-    });
+    })
   },
-});
+})
 
 /**
  * Public action to retrieve step counts and heart rates from the Google Health API.
@@ -61,19 +66,21 @@ export const fetchGoogleHealthData = action({
   args: {},
   handler: async (ctx) => {
     // 1. Get the user's Google account tokens
-    const account = await ctx.runQuery(internal.googleHealth.getGoogleAccount);
+    const account = await ctx.runQuery(internal.googleHealth.getGoogleAccount)
     if (!account) {
-      return { status: "unlinked" };
+      return { status: "unlinked" }
     }
 
-    let accessToken = account.accessToken;
-    const expiresAt = account.accessTokenExpiresAt ?? 0;
-    
+    let accessToken = account.accessToken
+    const expiresAt = account.accessTokenExpiresAt ?? 0
+
     // Check if token is expired or expires in the next 5 minutes
-    const isExpired = expiresAt - 300000 < Date.now();
+    const isExpired = expiresAt - 300000 < Date.now()
 
     if (isExpired && account.refreshToken) {
-      console.log("Google Health access token expired or expiring soon. Refreshing...");
+      console.log(
+        "Google Health access token expired or expiring soon. Refreshing..."
+      )
       try {
         const response = await fetch("https://oauth2.googleapis.com/token", {
           method: "POST",
@@ -86,17 +93,17 @@ export const fetchGoogleHealthData = action({
             refresh_token: account.refreshToken,
             grant_type: "refresh_token",
           }),
-        });
+        })
 
         if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`Failed to refresh Google OAuth token: ${errText}`);
+          const errText = await response.text()
+          throw new Error(`Failed to refresh Google OAuth token: ${errText}`)
         }
 
-        const data = await response.json();
-        accessToken = data.access_token;
-        const newExpiresAt = Date.now() + data.expires_in * 1000;
-        const newRefreshToken = data.refresh_token;
+        const data = await response.json()
+        accessToken = data.access_token
+        const newExpiresAt = Date.now() + data.expires_in * 1000
+        const newRefreshToken = data.refresh_token
 
         // Persist the refreshed token
         await ctx.runMutation(internal.googleHealth.updateGoogleAccount, {
@@ -104,21 +111,21 @@ export const fetchGoogleHealthData = action({
           accessToken,
           accessTokenExpiresAt: newExpiresAt,
           refreshToken: newRefreshToken,
-        });
-        console.log("Google Health access token successfully refreshed.");
+        })
+        console.log("Google Health access token successfully refreshed.")
       } catch (err) {
-        console.error("Error refreshing Google OAuth token:", err);
+        console.error("Error refreshing Google OAuth token:", err)
       }
     }
 
     if (!accessToken) {
-      return { status: "error", message: "No access token available." };
+      return { status: "error", message: "No access token available." }
     }
 
     // 2. Fetch data from Google Health API endpoint
     try {
-      const now = new Date();
-      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const now = new Date()
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
 
       const start = {
         date: {
@@ -126,102 +133,140 @@ export const fetchGoogleHealthData = action({
           month: now.getUTCMonth() + 1,
           day: now.getUTCDate(),
         },
-      };
+      }
       const end = {
         date: {
           year: tomorrow.getUTCFullYear(),
           month: tomorrow.getUTCMonth() + 1,
           day: tomorrow.getUTCDate(),
         },
-      };
-
-      let steps = 0;
-      let fetchedStepsSuccessfully = false;
-      try {
-        const response = await fetch("https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints:dailyRollUp", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            range: {
-              start,
-              end,
-            },
-            windowSizeDays: 1,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const rollupPoints = data.dailyRollupDataPoints || data.dataPoints || [];
-          if (rollupPoints.length > 0) {
-            const point = rollupPoints[0];
-            const rawSteps = point.steps?.countSum ?? point.value?.steps?.countSum ?? "0";
-            steps = parseInt(rawSteps, 10);
-          }
-          fetchedStepsSuccessfully = true;
-        } else {
-          const errText = await response.text();
-          console.warn(`Steps API returned status ${response.status}: ${errText}`);
-        }
-      } catch (err: any) {
-        console.warn("Failed fetching steps from live Google Health API:", err.message);
       }
 
-      let heartRate = 72;
-      let fetchedHRSuccessfully = false;
+      let steps = 0
+      let fetchedStepsSuccessfully = false
       try {
-        const hrResponse = await fetch("https://health.googleapis.com/v4/users/me/dataTypes/heart-rate/dataPoints:dailyRollUp", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            range: {
-              start,
-              end,
+        const response = await fetch(
+          "https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints:dailyRollUp",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
             },
-            windowSizeDays: 1,
-          }),
-        });
+            body: JSON.stringify({
+              range: {
+                start,
+                end,
+              },
+              windowSizeDays: 1,
+            }),
+          }
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          const rollupPoints =
+            data.dailyRollupDataPoints || data.dataPoints || []
+          if (rollupPoints.length > 0) {
+            const point = rollupPoints[0]
+            const rawSteps =
+              point.steps?.countSum ?? point.value?.steps?.countSum ?? "0"
+            steps = parseInt(rawSteps, 10)
+          }
+          fetchedStepsSuccessfully = true
+        } else {
+          const errText = await response.text()
+          console.warn(
+            `Steps API returned status ${response.status}: ${errText}`
+          )
+        }
+      } catch (err: any) {
+        console.warn(
+          "Failed fetching steps from live Google Health API:",
+          err.message
+        )
+      }
+
+      let heartRate = 72
+      let fetchedHRSuccessfully = false
+      try {
+        const hrResponse = await fetch(
+          "https://health.googleapis.com/v4/users/me/dataTypes/heart-rate/dataPoints:dailyRollUp",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              range: {
+                start,
+                end,
+              },
+              windowSizeDays: 1,
+            }),
+          }
+        )
 
         if (hrResponse.ok) {
-          const hrData = await hrResponse.json();
-          const rollupPoints = hrData.dailyRollupDataPoints || hrData.dataPoints || [];
+          const hrData = await hrResponse.json()
+          const rollupPoints =
+            hrData.dailyRollupDataPoints || hrData.dataPoints || []
           if (rollupPoints.length > 0) {
-            const point = rollupPoints[0];
-            const rollupVal = point.heartRateRollup ?? point.value?.heartRateRollup;
+            const point = rollupPoints[0]
+            const rollupVal =
+              point.heartRateRollup ?? point.value?.heartRateRollup
             if (rollupVal) {
-              heartRate = Math.round(rollupVal.averageHeartRate ?? rollupVal.restingHeartRate ?? 72);
-              fetchedHRSuccessfully = true;
+              heartRate = Math.round(
+                rollupVal.averageHeartRate ?? rollupVal.restingHeartRate ?? 72
+              )
+              fetchedHRSuccessfully = true
             }
           }
         } else {
-          const errText = await hrResponse.text();
-          console.warn(`Heart rate API returned status ${hrResponse.status}: ${errText}`);
+          const errText = await hrResponse.text()
+          console.warn(
+            `Heart rate API returned status ${hrResponse.status}: ${errText}`
+          )
         }
       } catch (hrErr: any) {
-        console.warn("Could not fetch heart rate from API:", hrErr.message);
+        console.warn("Could not fetch heart rate from API:", hrErr.message)
       }
 
       if (!fetchedStepsSuccessfully && !fetchedHRSuccessfully) {
-        throw new Error("Could not fetch any data from the live Google Health API");
+        throw new Error(
+          "Could not fetch any data from the live Google Health API"
+        )
       }
 
-      console.log(`Google Health API fetch success. Steps: ${steps}, Heart Rate: ${heartRate}`);
+      if (fetchedHRSuccessfully) {
+        try {
+          await ctx.runMutation(internal.heartRate.logInternal, {
+            bpm: heartRate,
+            source: "google_health",
+            isResting: true,
+          })
+        } catch (err) {
+          console.warn("Failed to persist heart rate reading:", err)
+        }
+      }
+
+      console.log(
+        `Google Health API fetch success. Steps: ${steps}, Heart Rate: ${heartRate}`
+      )
 
       return {
         status: "success",
         steps,
         heartRate,
         isDemo: false,
-      };
+      }
     } catch (err: any) {
-      console.warn("Failed fetching from live Google Health API, using sandbox fallback:", err.message);
-      
+      console.warn(
+        "Failed fetching from live Google Health API, using sandbox fallback:",
+        err.message
+      )
+
       // Fallback to high-fidelity mock data if Google sandbox endpoint is unavailable
       return {
         status: "success",
@@ -229,10 +274,10 @@ export const fetchGoogleHealthData = action({
         heartRate: 67,
         isDemo: true,
         warning: "Showing demo/sandbox health data (Google API mock fallback)",
-      };
+      }
     }
   },
-});
+})
 
 /**
  * Public mutation to clear/unlink the user's Google account to allow re-authenticating with new scopes.
@@ -240,23 +285,23 @@ export const fetchGoogleHealthData = action({
 export const unlinkGoogleAccount = mutation({
   args: {},
   handler: async (ctx) => {
-    const user = await authComponent.getAuthUser(ctx);
+    const user = await authComponent.getAuthUser(ctx)
     const account = await ctx.runQuery(components.betterAuth.adapter.findOne, {
       model: "account",
       where: [
         { field: "userId", value: user._id },
         { field: "providerId", value: "google" },
       ],
-    });
+    })
     if (account) {
       await ctx.runMutation(components.betterAuth.adapter.deleteOne, {
         input: {
           model: "account",
           where: [{ field: "_id", value: account._id }],
         },
-      });
-      return { success: true };
+      })
+      return { success: true }
     }
-    return { success: false, message: "No Google account linked" };
+    return { success: false, message: "No Google account linked" }
   },
-});
+})

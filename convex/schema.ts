@@ -138,6 +138,18 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_ownerTokenIdentifier", ["ownerTokenIdentifier"]),
 
+  heartRateReadings: defineTable({
+    ownerTokenIdentifier: v.string(),
+    recordedAt: v.number(),
+    bpm: v.number(),
+    source: v.string(),
+    isResting: v.optional(v.boolean()),
+    createdAt: v.number(),
+  }).index("by_ownerTokenIdentifier_and_recordedAt", [
+    "ownerTokenIdentifier",
+    "recordedAt",
+  ]),
+
   workoutTemplateExercises: defineTable({
     ownerTokenIdentifier: v.string(),
     templateId: v.id("workoutTemplates"),

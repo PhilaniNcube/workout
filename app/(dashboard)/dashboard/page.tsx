@@ -10,6 +10,7 @@ import SessionHistoryCard from "@/components/dashboard/session-history-card"
 import VolumeTrendChart from "@/components/dashboard/volume-trend-chart"
 import ExerciseProgressionChart from "@/components/dashboard/exercise-progression-chart"
 import BodyMetricsChart from "@/components/dashboard/body-metrics-chart"
+import HeartRateChart from "@/components/dashboard/heart-rate-chart"
 import MuscleGroups from "@/components/muscle-groups/muscle-groups"
 import React from "react"
 
@@ -25,6 +26,7 @@ const DashboardPage = () => {
         <ExerciseProgressionChart />
       </div>
       <BodyMetricsChart />
+      <HeartRateChart />
       <div className="grid gap-4 lg:grid-cols-2">
         <WeeklyVolumeCard />
         <MuscleBalanceCard />
