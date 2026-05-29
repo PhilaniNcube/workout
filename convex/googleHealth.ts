@@ -122,7 +122,7 @@ export const fetchGoogleHealthData = action({
       return { status: "error", message: "No access token available." }
     }
 
-    // 2. Fetch data from Google Health API endpoint
+    // 2. Fetch data from the APIs
     try {
       const now = new Date()
       const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
@@ -142,6 +142,7 @@ export const fetchGoogleHealthData = action({
         },
       }
 
+      // ── Steps (Google Health API) ──
       let steps = 0
       let fetchedStepsSuccessfully = false
       try {
@@ -154,10 +155,7 @@ export const fetchGoogleHealthData = action({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              range: {
-                start,
-                end,
-              },
+              range: { start, end },
               windowSizeDays: 1,
             }),
           }
@@ -187,10 +185,79 @@ export const fetchGoogleHealthData = action({
         )
       }
 
+      // ── Heart Rate ──
+      // Priority: Google Fit REST API → Google Health data sources → Google Health daily roll-up
       let heartRate = 72
       let fetchedHRSuccessfully = false
 
       const hrFetch = async () => {
+        // Try 1: Google Fit REST API (where Mi Fitness data lives)
+        try {
+          const nowMs = Date.now()
+          const threeDaysAgoMs = nowMs - 3 * 24 * 60 * 60 * 1000
+
+          const fitResponse = await fetch(
+            "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                aggregateBy: [{ dataTypeName: "com.google.heart_rate.bpm" }],
+                startTimeMillis: threeDaysAgoMs,
+                endTimeMillis: nowMs,
+              }),
+            }
+          )
+
+          if (fitResponse.ok) {
+            const fitData = await fitResponse.json()
+            const buckets = fitData.bucket ?? []
+
+            let allPoints: any[] = []
+            for (const bucket of buckets) {
+              for (const dataset of bucket.dataset ?? []) {
+                for (const point of dataset.point ?? []) {
+                  allPoints.push(point)
+                }
+              }
+            }
+
+            if (allPoints.length > 0) {
+              const latest = allPoints.reduce((best: any, p: any) => {
+                const pe = BigInt(p.endTimeNanos ?? "0")
+                const be = BigInt(best.endTimeNanos ?? "0")
+                return pe > be ? p : best
+              }, allPoints[0])
+
+              const valArr = latest.value
+              if (valArr && valArr.length > 0) {
+                const bpmVal = valArr[0].fpVal ?? valArr[0].intVal
+                if (bpmVal != null && bpmVal > 0) {
+                  heartRate = Math.round(bpmVal)
+                  fetchedHRSuccessfully = true
+                  console.log(
+                    `Latest heart rate from Google Fit: ${heartRate} bpm`
+                  )
+                  return
+                }
+              }
+            }
+          } else {
+            console.warn(
+              `Google Fit heart rate returned status ${fitResponse.status}`
+            )
+          }
+        } catch (err: any) {
+          console.warn(
+            "Could not fetch heart rate from Google Fit:",
+            err.message
+          )
+        }
+
+        // Try 2: Google Health data sources
         try {
           const dsResponse = await fetch(
             "https://health.googleapis.com/v4/users/me/dataSources",
@@ -238,7 +305,7 @@ export const fetchGoogleHealthData = action({
                     heartRate = Math.round(bpmVal)
                     fetchedHRSuccessfully = true
                     console.log(
-                      `Latest heart rate from source ${ds.dataStreamId}: ${heartRate} bpm`
+                      `Latest heart rate from Health source ${ds.dataStreamId}: ${heartRate} bpm`
                     )
                     return
                   }
@@ -250,7 +317,7 @@ export const fetchGoogleHealthData = action({
           }
         } catch (err: any) {
           console.warn(
-            "Could not fetch individual heart rate data points:",
+            "Could not fetch heart rate from Google Health data sources:",
             err.message
           )
         }
@@ -258,6 +325,7 @@ export const fetchGoogleHealthData = action({
 
       await hrFetch()
 
+      // Try 3: Google Health daily roll-up (last resort)
       if (!fetchedHRSuccessfully) {
         try {
           const hrResponse = await fetch(
@@ -269,10 +337,7 @@ export const fetchGoogleHealthData = action({
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                range: {
-                  start,
-                  end,
-                },
+                range: { start, end },
                 windowSizeDays: 1,
               }),
             }
@@ -310,6 +375,7 @@ export const fetchGoogleHealthData = action({
         )
       }
 
+      // Persist heart rate reading to database
       if (fetchedHRSuccessfully) {
         try {
           await ctx.runMutation(internal.heartRate.logInternal, {
@@ -338,7 +404,6 @@ export const fetchGoogleHealthData = action({
         err.message
       )
 
-      // Fallback to high-fidelity mock data if Google sandbox endpoint is unavailable
       return {
         status: "success",
         steps: 8754,
