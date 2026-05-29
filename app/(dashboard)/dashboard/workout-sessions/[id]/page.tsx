@@ -5,5 +5,6 @@ export default async function WorkoutSessionPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  return <SessionDetailPage paramsPromise={params} />
+  const { id } = await params
+  return <SessionDetailPage sessionId={id} />
 }

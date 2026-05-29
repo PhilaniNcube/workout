@@ -1,14 +1,12 @@
 "use client"
 
-import { use } from "react"
 import SessionDetail from "@/components/workouts/session-detail"
 import type { Id } from "@/convex/_generated/dataModel"
 
 export default function SessionDetailPage({
-  paramsPromise,
+  sessionId,
 }: {
-  paramsPromise: Promise<{ id: string }>
+  sessionId: string
 }) {
-  const { id } = use(paramsPromise)
-  return <SessionDetail sessionId={id as Id<"workoutSessions">} />
+  return <SessionDetail sessionId={sessionId as Id<"workoutSessions">} />
 }
