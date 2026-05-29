@@ -189,48 +189,119 @@ export const fetchGoogleHealthData = action({
 
       let heartRate = 72
       let fetchedHRSuccessfully = false
-      try {
-        const hrResponse = await fetch(
-          "https://health.googleapis.com/v4/users/me/dataTypes/heart-rate/dataPoints:dailyRollUp",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              range: {
-                start,
-                end,
-              },
-              windowSizeDays: 1,
-            }),
-          }
-        )
 
-        if (hrResponse.ok) {
-          const hrData = await hrResponse.json()
-          const rollupPoints =
-            hrData.dailyRollupDataPoints || hrData.dataPoints || []
-          if (rollupPoints.length > 0) {
-            const point = rollupPoints[0]
-            const rollupVal =
-              point.heartRateRollup ?? point.value?.heartRateRollup
-            if (rollupVal) {
-              heartRate = Math.round(
-                rollupVal.averageHeartRate ?? rollupVal.restingHeartRate ?? 72
-              )
-              fetchedHRSuccessfully = true
+      const hrFetch = async () => {
+        try {
+          const dsResponse = await fetch(
+            "https://health.googleapis.com/v4/users/me/dataSources",
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }
+          )
+
+          if (dsResponse.ok) {
+            const dsData = await dsResponse.json()
+            const sources = dsData.dataSource ?? []
+
+            const hrSources = sources.filter(
+              (ds: any) =>
+                ds.dataType?.name === "com.google.heart_rate.bpm" &&
+                ds.dataStreamId
+            )
+
+            const nowNs = BigInt(Date.now()) * BigInt("1000000")
+            const threeDaysAgoNs =
+              BigInt(Date.now() - 3 * 24 * 60 * 60 * 1000) * BigInt("1000000")
+
+            for (const ds of hrSources.slice(0, 5)) {
+              try {
+                const dsUrl = `https://health.googleapis.com/v4/users/me/dataSources/${ds.dataStreamId}/datasets/${threeDaysAgoNs}-${nowNs}`
+                const dsFetch = await fetch(dsUrl, {
+                  headers: { Authorization: `Bearer ${accessToken}` },
+                })
+
+                if (!dsFetch.ok) continue
+                const dataset = await dsFetch.json()
+                const points = dataset.point ?? []
+                if (points.length === 0) continue
+
+                const latest = points.reduce((best: any, p: any) => {
+                  const thisEnd = BigInt(p.endTimeNanos ?? "0")
+                  const bestEnd = BigInt(best.endTimeNanos ?? "0")
+                  return thisEnd > bestEnd ? p : best
+                }, points[0])
+
+                const valArr = latest.value
+                if (valArr && valArr.length > 0) {
+                  const bpmVal = valArr[0].fpVal ?? valArr[0].intVal
+                  if (bpmVal != null && bpmVal > 0) {
+                    heartRate = Math.round(bpmVal)
+                    fetchedHRSuccessfully = true
+                    console.log(
+                      `Latest heart rate from source ${ds.dataStreamId}: ${heartRate} bpm`
+                    )
+                    return
+                  }
+                }
+              } catch {
+                continue
+              }
             }
           }
-        } else {
-          const errText = await hrResponse.text()
+        } catch (err: any) {
           console.warn(
-            `Heart rate API returned status ${hrResponse.status}: ${errText}`
+            "Could not fetch individual heart rate data points:",
+            err.message
           )
         }
-      } catch (hrErr: any) {
-        console.warn("Could not fetch heart rate from API:", hrErr.message)
+      }
+
+      await hrFetch()
+
+      if (!fetchedHRSuccessfully) {
+        try {
+          const hrResponse = await fetch(
+            "https://health.googleapis.com/v4/users/me/dataTypes/heart-rate/dataPoints:dailyRollUp",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                range: {
+                  start,
+                  end,
+                },
+                windowSizeDays: 1,
+              }),
+            }
+          )
+
+          if (hrResponse.ok) {
+            const hrData = await hrResponse.json()
+            const rollupPoints =
+              hrData.dailyRollupDataPoints || hrData.dataPoints || []
+            if (rollupPoints.length > 0) {
+              const point = rollupPoints[0]
+              const rollupVal =
+                point.heartRateRollup ?? point.value?.heartRateRollup
+              if (rollupVal) {
+                heartRate = Math.round(
+                  rollupVal.averageHeartRate ?? rollupVal.restingHeartRate ?? 72
+                )
+                fetchedHRSuccessfully = true
+              }
+            }
+          } else {
+            const errText = await hrResponse.text()
+            console.warn(
+              `Heart rate API returned status ${hrResponse.status}: ${errText}`
+            )
+          }
+        } catch (hrErr: any) {
+          console.warn("Could not fetch heart rate from API:", hrErr.message)
+        }
       }
 
       if (!fetchedStepsSuccessfully && !fetchedHRSuccessfully) {
