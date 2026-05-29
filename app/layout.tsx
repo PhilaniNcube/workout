@@ -35,19 +35,9 @@ export default function RootLayout({
       )}
     >
       <body>
-        <ThemeProvider>
-          <TooltipProvider>
-            <Suspense
-              fallback={
-                <ConvexClientProvider initialToken={null}>
-                  {children}
-                </ConvexClientProvider>
-              }
-            >
-              <AuthProvider>{children}</AuthProvider>
-            </Suspense>
-          </TooltipProvider>
-        </ThemeProvider>
+        <Suspense fallback={null}>
+          <AuthProvider>{children}</AuthProvider>
+        </Suspense>
       </body>
     </html>
   )
@@ -56,8 +46,12 @@ export default function RootLayout({
 async function AuthProvider({ children }: { children: React.ReactNode }) {
   const initialToken = await getToken()
   return (
-    <ConvexClientProvider initialToken={initialToken}>
-      {children}
-    </ConvexClientProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <ConvexClientProvider initialToken={initialToken}>
+          {children}
+        </ConvexClientProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   )
 }

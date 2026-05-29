@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import {
   IconBarbell,
@@ -112,9 +113,19 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t px-4 py-6 text-center text-xs text-muted-foreground lg:px-6">
-        &copy; {new Date().getFullYear()} Workout Tracker. All rights reserved.
-      </footer>
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </div>
+  )
+}
+
+async function Footer() {
+  const { connection } = await import("next/server")
+  await connection()
+  return (
+    <footer className="border-t px-4 py-6 text-center text-xs text-muted-foreground lg:px-6">
+      &copy; {new Date().getFullYear()} Workout Tracker. All rights reserved.
+    </footer>
   )
 }
