@@ -8,8 +8,13 @@ import React from "react"
 const WorkoutSessions = () => {
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <h1 className="text-2xl font-bold">Workout Sessions</h1>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Workout Sessions</h1>
+          <p className="text-sm text-muted-foreground">
+            Track and review your workouts
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <ExportCsvButton />
           <AddSession />
