@@ -11,15 +11,18 @@ const WorkoutSessions = () => {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Workout Sessions</h1>
-          <p className="text-sm text-muted-foreground">
-            Track and review your workouts
-          </p>
+
         </div>
+
         <div className="flex items-center gap-2">
-          <ExportCsvButton />
+          {/* <ExportCsvButton /> */}
           <AddSession />
         </div>
+
       </div>
+      <p className="text-sm text-muted-foreground">
+        Track and review your workouts
+      </p>
       <TemplateList />
       <Separator />
       <SessionsCalendar />
