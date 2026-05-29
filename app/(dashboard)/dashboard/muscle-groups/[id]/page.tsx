@@ -1,7 +1,8 @@
+import { Suspense } from "react"
 import MuscleGroup from "@/components/muscle-groups/muscle-group"
 
 
-export default async function MuscleGroupPage({
+export default function MuscleGroupPage({
   params,
 }: {
   params: Promise<{ id: string }>
@@ -9,6 +10,8 @@ export default async function MuscleGroupPage({
 
 
   return (
-    <MuscleGroup paramsPromise={params} />
+    <Suspense fallback={<div className="py-12 text-center text-sm text-muted-foreground">Loading muscle group...</div>}>
+      <MuscleGroup paramsPromise={params} />
+    </Suspense>
   )
 }

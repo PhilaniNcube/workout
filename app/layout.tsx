@@ -1,4 +1,5 @@
 import { Geist, JetBrains_Mono } from "next/font/google"
+import { Suspense } from "react"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -17,13 +18,11 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
 })
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const initialToken = await getToken()
-
   return (
     <html
       lang="en"
@@ -36,12 +35,29 @@ export default async function RootLayout({
       )}
     >
       <body>
-        <ConvexClientProvider initialToken={initialToken}>
-          <ThemeProvider>
-            <TooltipProvider>{children}</TooltipProvider>
-          </ThemeProvider>
-        </ConvexClientProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Suspense
+              fallback={
+                <ConvexClientProvider initialToken={null}>
+                  {children}
+                </ConvexClientProvider>
+              }
+            >
+              <AuthProvider>{children}</AuthProvider>
+            </Suspense>
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
+  )
+}
+
+async function AuthProvider({ children }: { children: React.ReactNode }) {
+  const initialToken = await getToken()
+  return (
+    <ConvexClientProvider initialToken={initialToken}>
+      {children}
+    </ConvexClientProvider>
   )
 }
