@@ -192,62 +192,17 @@ export default function SessionDetail({
   const router = useRouter()
 
   const data = useQuery(api.workoutSessions.get, { sessionId })
-
-  if (!data) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-sm text-muted-foreground">Loading session...</p>
-      </div>
-    )
-  }
-
-  const { session, sessionExercises } = data
-  const isFinished = session.endedAt != null
-
   const exercises = useQuery(api.exercises.list, {})
   const muscleGroups = useQuery(api.muscleGroups.list, {})
   const suggestions = useQuery(api.workoutSessions.suggestNextExercises, {
     limit: 6,
   })
 
-  const exerciseMap = new Map(exercises?.map((e) => [e._id, e]) ?? [])
-  const muscleGroupMap = new Map(muscleGroups?.map((mg) => [mg._id, mg]) ?? [])
-
-  const exercisesByGroup = (() => {
-    if (!exercises) return []
-    const grouped = new Map<
-      string,
-      { label: string; exercises: typeof exercises }
-    >()
-    const ungrouped: typeof exercises = []
-
-    for (const ex of exercises) {
-      if (ex.muscleGroup) {
-        const mg = muscleGroupMap.get(ex.muscleGroup)
-        const key = ex.muscleGroup
-        const group = grouped.get(key) ?? {
-          label: mg?.name ?? "Unknown",
-          exercises: [],
-        }
-        group.exercises.push(ex)
-        grouped.set(key, group)
-      } else {
-        ungrouped.push(ex)
-      }
-    }
-
-    const result = Array.from(grouped.values())
-    if (ungrouped.length > 0) {
-      result.push({ label: "Uncategorized", exercises: ungrouped })
-    }
-    return result
-  })()
-
   const boundSubmit = async (
     prevState: AddExerciseState,
     formData: FormData
   ) => {
-    const result = await submitAddExercise(session._id, prevState, formData)
+    const result = await submitAddExercise(sessionId, prevState, formData)
     if (result.success) {
       setShowAddForm(false)
     }
@@ -281,6 +236,50 @@ export default function SessionDetail({
       notes: "",
     },
   })
+
+  if (!data || !exercises || !muscleGroups) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-sm text-muted-foreground">Loading session...</p>
+      </div>
+    )
+  }
+
+  const { session, sessionExercises } = data
+  const isFinished = session.endedAt != null
+
+  const exerciseMap = new Map(exercises?.map((e) => [e._id, e]) ?? [])
+  const muscleGroupMap = new Map(muscleGroups?.map((mg) => [mg._id, mg]) ?? [])
+
+  const exercisesByGroup = (() => {
+    if (!exercises) return []
+    const grouped = new Map<
+      string,
+      { label: string; exercises: typeof exercises }
+    >()
+    const ungrouped: typeof exercises = []
+
+    for (const ex of exercises) {
+      if (ex.muscleGroup) {
+        const mg = muscleGroupMap.get(ex.muscleGroup)
+        const key = ex.muscleGroup
+        const group = grouped.get(key) ?? {
+          label: mg?.name ?? "Unknown",
+          exercises: [],
+        }
+        group.exercises.push(ex)
+        grouped.set(key, group)
+      } else {
+        ungrouped.push(ex)
+      }
+    }
+
+    const result = Array.from(grouped.values())
+    if (ungrouped.length > 0) {
+      result.push({ label: "Uncategorized", exercises: ungrouped })
+    }
+    return result
+  })()
 
   const selectedExerciseId = watch("exerciseId")
   const selectedExercise = selectedExerciseId
