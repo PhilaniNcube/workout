@@ -486,3 +486,188 @@ export const getSessionHistory = query({
 		return results;
 	},
 });
+
+export const getProgressionCharts = query({
+	args: {
+		weeks: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const tokenIdentifier = await requireTokenIdentifier(ctx);
+		const weeks = Math.min(Math.max(args.weeks ?? 8, 2), 52);
+		const now = Date.now();
+		const cutoff = now - weeks * 7 * 24 * 60 * 60 * 1000;
+
+		// ── Fetch all sessions in the window ──
+		const sessions = await ctx.db
+			.query("workoutSessions")
+			.withIndex("by_ownerTokenIdentifier_and_startedAt", (q) =>
+				q
+					.eq("ownerTokenIdentifier", tokenIdentifier)
+					.gte("startedAt", cutoff),
+			)
+			.order("asc")
+			.take(500);
+
+		// ── 1. Weekly volume trend ──
+		const weekBuckets = new Map<string, { volume: number; sets: number; reps: number }>();
+		// Pre-populate all week buckets
+		for (let i = 0; i < weeks; i++) {
+			const weekStart = new Date(now - (weeks - i) * 7 * 24 * 60 * 60 * 1000);
+			const key = weekStart.toISOString().slice(0, 10);
+			weekBuckets.set(key, { volume: 0, sets: 0, reps: 0 });
+		}
+
+		const weekKeyFor = (timestamp: number) => {
+			// Find which week bucket this timestamp falls into
+			for (let i = weeks - 1; i >= 0; i--) {
+				const bucketStart = now - (weeks - i) * 7 * 24 * 60 * 60 * 1000;
+				const bucketEnd = now - (weeks - i - 1) * 7 * 24 * 60 * 60 * 1000;
+				if (timestamp >= bucketStart && timestamp < bucketEnd) {
+					return new Date(bucketStart).toISOString().slice(0, 10);
+				}
+			}
+			return null;
+		};
+
+		// ── 2. Exercise progression tracking ──
+		const exerciseSessionData = new Map<
+			string,
+			{
+				exerciseName: string;
+				points: { date: string; maxWeight: number; totalVolume: number; totalReps: number }[];
+			}
+		>();
+		const exerciseFrequency = new Map<string, number>();
+
+		const exerciseCache = new Map<string, Doc<"exercises"> | null>();
+
+		for (const session of sessions) {
+			const sessionDate = new Date(session.startedAt).toISOString().slice(0, 10);
+			const wKey = weekKeyFor(session.startedAt);
+
+			const sessionExercises = await ctx.db
+				.query("workoutSessionExercises")
+				.withIndex("by_ownerTokenIdentifier_and_workoutSessionId", (q) =>
+					q
+						.eq("ownerTokenIdentifier", tokenIdentifier)
+						.eq("workoutSessionId", session._id),
+				)
+				.take(100);
+
+			for (const se of sessionExercises) {
+				const sets = await ctx.db
+					.query("sets")
+					.withIndex("by_ownerTokenIdentifier_and_workoutSessionExerciseId", (q) =>
+						q
+							.eq("ownerTokenIdentifier", tokenIdentifier)
+							.eq("workoutSessionExerciseId", se._id),
+					)
+					.take(100);
+
+				const exKey = String(se.exerciseId);
+				let exercise = exerciseCache.get(exKey);
+				if (exercise === undefined) {
+					exercise = await ctx.db.get(se.exerciseId);
+					exerciseCache.set(exKey, exercise);
+				}
+
+				let sessionMaxWeight = 0;
+				let sessionVolume = 0;
+				let sessionReps = 0;
+
+				for (const set of sets) {
+					if (set.isWarmup) continue;
+					if (set.reps != null) sessionReps += set.reps;
+					if (set.weight != null && set.reps != null) {
+						sessionVolume += set.weight * set.reps;
+					}
+					if (set.weight != null && set.weight > sessionMaxWeight) {
+						sessionMaxWeight = set.weight;
+					}
+
+					// Also add to week buckets
+					if (wKey && weekBuckets.has(wKey)) {
+						const bucket = weekBuckets.get(wKey)!;
+						if (!set.isWarmup) {
+							bucket.sets++;
+							if (set.reps != null) bucket.reps += set.reps;
+							if (set.weight != null && set.reps != null) {
+								bucket.volume += set.weight * set.reps;
+							}
+						}
+					}
+				}
+
+				if (sessionMaxWeight > 0 && exercise) {
+					exerciseFrequency.set(exKey, (exerciseFrequency.get(exKey) ?? 0) + 1);
+
+					const existing = exerciseSessionData.get(exKey) ?? {
+						exerciseName: exercise.name,
+						points: [],
+					};
+					existing.points.push({
+						date: sessionDate,
+						maxWeight: sessionMaxWeight,
+						totalVolume: sessionVolume,
+						totalReps: sessionReps,
+					});
+					exerciseSessionData.set(exKey, existing);
+				}
+			}
+		}
+
+		// ── Shape volume trend ──
+		const volumeTrend = Array.from(weekBuckets.entries())
+			.map(([date, data]) => ({
+				date,
+				volume: Math.round(data.volume),
+				sets: data.sets,
+				reps: data.reps,
+			}))
+			.sort((a, b) => a.date.localeCompare(b.date));
+
+		// ── Shape exercise progression (top 5 most trained) ──
+		const topExerciseIds = Array.from(exerciseFrequency.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 5)
+			.map(([id]) => id);
+
+		const exerciseProgression = topExerciseIds
+			.map((id) => {
+				const data = exerciseSessionData.get(id);
+				if (!data) return null;
+				return {
+					exerciseId: id,
+					exerciseName: data.exerciseName,
+					points: data.points.sort((a, b) => a.date.localeCompare(b.date)),
+				};
+			})
+			.filter((x): x is NonNullable<typeof x> => x !== null);
+
+		// ── 3. Body metrics trend ──
+		const bodyMetrics = await ctx.db
+			.query("bodyMetrics")
+			.withIndex("by_ownerTokenIdentifier_and_recordedAt", (q) =>
+				q
+					.eq("ownerTokenIdentifier", tokenIdentifier)
+					.gte("recordedAt", cutoff),
+			)
+			.order("asc")
+			.take(200);
+
+		const bodyMetricsTrend = bodyMetrics.map((m) => ({
+			date: new Date(m.recordedAt).toISOString().slice(0, 10),
+			bodyWeight: m.bodyWeight ?? null,
+			bodyFatPercent: m.bodyFatPercent ?? null,
+			waistCm: m.waistCm ?? null,
+			chestCm: m.chestCm ?? null,
+		}));
+
+		return {
+			volumeTrend,
+			exerciseProgression,
+			bodyMetricsTrend,
+			weeks,
+		};
+	},
+});

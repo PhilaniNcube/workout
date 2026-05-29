@@ -7,6 +7,9 @@ import WeeklyVolumeCard from "@/components/dashboard/weekly-volume-card"
 import MuscleBalanceCard from "@/components/dashboard/muscle-balance-card"
 import WeightReferenceCard from "@/components/dashboard/weight-reference-card"
 import SessionHistoryCard from "@/components/dashboard/session-history-card"
+import VolumeTrendChart from "@/components/dashboard/volume-trend-chart"
+import ExerciseProgressionChart from "@/components/dashboard/exercise-progression-chart"
+import BodyMetricsChart from "@/components/dashboard/body-metrics-chart"
 import MuscleGroups from "@/components/muscle-groups/muscle-groups"
 import React from "react"
 
@@ -17,6 +20,11 @@ const DashboardPage = () => {
       <StreaksCard />
       <GoogleHealthCard />
       <OverloadAlertsCard />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <VolumeTrendChart />
+        <ExerciseProgressionChart />
+      </div>
+      <BodyMetricsChart />
       <div className="grid gap-4 lg:grid-cols-2">
         <WeeklyVolumeCard />
         <MuscleBalanceCard />
