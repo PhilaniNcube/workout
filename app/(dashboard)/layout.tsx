@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { SiteHeader } from "@/components/site-header"
 import AuthButtons from "@/components/auth-buttons"
 import OfflineIndicator from "@/components/offline-indicator"
+import InstallPrompt from "@/components/install-prompt"
 import { IconCircleDashedNumber0 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 
@@ -40,6 +41,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         />
         <main className="flex-1 px-3 py-1.5">{children}</main>
       </SidebarInset>
+      <InstallPrompt />
     </SidebarProvider>
   )
 }
