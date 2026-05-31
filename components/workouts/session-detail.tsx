@@ -67,6 +67,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
+import { useOffline } from "@/components/offline-provider"
 
 const addExerciseSchema = z.object({
   exerciseId: z.string().min(1, "Please select an exercise"),
@@ -191,6 +192,7 @@ export default function SessionDetail({
   const [isFinishing, startFinishTransition] = useTransition()
   const isMobile = useIsMobile()
   const router = useRouter()
+  const { isOnline, queueSetMutation } = useOffline()
 
   const data = useQuery(api.workoutSessions.get, { sessionId })
   const exercises = useQuery(api.exercises.list, {})
@@ -204,6 +206,57 @@ export default function SessionDetail({
     prevState: AddExerciseState,
     formData: FormData
   ) => {
+    if (!isOnline) {
+      const values = {
+        exerciseId: String(formData.get("exerciseId") ?? ""),
+        reps: String(formData.get("reps") ?? ""),
+        weight: String(formData.get("weight") ?? ""),
+        effortLevel: String(formData.get("effortLevel") ?? ""),
+        durationSeconds: String(formData.get("durationSeconds") ?? ""),
+        distance: String(formData.get("distance") ?? ""),
+        rir: String(formData.get("rir") ?? ""),
+        isWarmup: formData.get("isWarmup") === "on",
+        notes: String(formData.get("notes") ?? ""),
+      }
+      const parsed = addExerciseSchema.safeParse(values)
+      if (!parsed.success) {
+        const fieldErrors = parsed.error.flatten().fieldErrors
+        const firstError =
+          fieldErrors.exerciseId?.[0] ??
+          fieldErrors.reps?.[0] ??
+          fieldErrors.weight?.[0] ??
+          fieldErrors.effortLevel?.[0] ??
+          "Invalid input."
+        return { success: false, message: firstError }
+      }
+
+      const notes =
+        parsed.data.notes && parsed.data.notes !== "" ? parsed.data.notes : null
+
+      await queueSetMutation(
+        sessionId,
+        parsed.data.exerciseId,
+        {
+          reps: parsed.data.reps ?? null,
+          weight: parsed.data.weight ?? null,
+          effortLevel: parsed.data.effortLevel ?? null,
+          durationSeconds: parsed.data.durationSeconds
+            ? Number(parsed.data.durationSeconds)
+            : null,
+          distance: parsed.data.distance ? Number(parsed.data.distance) : null,
+          rir: parsed.data.rir ? Number(parsed.data.rir) : null,
+          isWarmup: parsed.data.isWarmup ?? false,
+        },
+        notes
+      )
+
+      setShowAddForm(false)
+      return {
+        success: true,
+        message: "Set saved offline. Will sync when back online.",
+      }
+    }
+
     const result = await submitAddExercise(sessionId, prevState, formData)
     if (result.success) {
       setShowAddForm(false)

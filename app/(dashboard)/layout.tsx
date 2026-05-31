@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { SiteHeader } from "@/components/site-header"
 import AuthButtons from "@/components/auth-buttons"
+import OfflineIndicator from "@/components/offline-indicator"
 import { IconCircleDashedNumber0 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 
@@ -18,6 +19,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     >
       <AppSidebar variant="inset" />
       <SidebarInset className="">
+        <OfflineIndicator />
         <SiteHeader
           authSlot={
             <Suspense
