@@ -239,6 +239,14 @@ export default function SessionDetail({
     },
   })
 
+  const watchedExerciseId = watch("exerciseId")
+  const lastUsed = useQuery(
+    api.exercises.getLastUsedForExercise,
+    watchedExerciseId && watchedExerciseId !== ""
+      ? { exerciseId: watchedExerciseId as Id<"exercises"> }
+      : "skip"
+  )
+
   if (!data || !exercises || !muscleGroups) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -501,6 +509,29 @@ export default function SessionDetail({
                 />
                 <FieldError>{errors.exerciseId?.message}</FieldError>
               </Field>
+
+              {lastUsed && (
+                <div className="rounded-md bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
+                  Last time:{" "}
+                  {isCardioExercise ? (
+                    <>
+                      {lastUsed.lastDurationSeconds != null &&
+                        `${Math.round(lastUsed.lastDurationSeconds / 60)} min`}
+                      {lastUsed.lastDistance != null &&
+                        ` · ${lastUsed.lastDistance} km`}
+                    </>
+                  ) : (
+                    <>
+                      {lastUsed.lastWeight != null &&
+                        `${lastUsed.lastWeight} kg`}
+                      {lastUsed.lastReps != null &&
+                        ` × ${lastUsed.lastReps} reps`}
+                    </>
+                  )}
+                  {" — "}
+                  {format(new Date(lastUsed.lastDate), "MMM d")}
+                </div>
+              )}
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
                 {isCardioExercise ? (

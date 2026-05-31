@@ -279,6 +279,58 @@ export const getLastUsedWeights = query({
   },
 })
 
+export const getLastUsedForExercise = query({
+  args: {
+    exerciseId: v.id("exercises"),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await requireTokenIdentifier(ctx)
+
+    const sessionExercises = await ctx.db
+      .query("workoutSessionExercises")
+      .withIndex("by_ownerTokenIdentifier_and_exerciseId", (q) =>
+        q
+          .eq("ownerTokenIdentifier", tokenIdentifier)
+          .eq("exerciseId", args.exerciseId)
+      )
+      .order("desc")
+      .take(1)
+
+    if (sessionExercises.length === 0) return null
+
+    const se = sessionExercises[0]
+    const session = await ctx.db.get(se.workoutSessionId)
+    if (!session) return null
+
+    const sets = await ctx.db
+      .query("sets")
+      .withIndex("by_ownerTokenIdentifier_and_workoutSessionExerciseId", (q) =>
+        q
+          .eq("ownerTokenIdentifier", tokenIdentifier)
+          .eq("workoutSessionExerciseId", se._id)
+      )
+      .order("desc")
+      .take(1)
+
+    if (sets.length === 0) return null
+
+    const lastSet = sets[0]
+    const hasStrengthData = lastSet.weight != null
+    const hasCardioData =
+      lastSet.durationSeconds != null || lastSet.distance != null
+
+    if (!hasStrengthData && !hasCardioData) return null
+
+    return {
+      lastWeight: lastSet.weight ?? null,
+      lastReps: lastSet.reps ?? null,
+      lastDurationSeconds: lastSet.durationSeconds ?? null,
+      lastDistance: lastSet.distance ?? null,
+      lastDate: session.startedAt,
+    }
+  },
+})
+
 const COMPOUND_KEYWORDS = [
   "bench press",
   "squat",
