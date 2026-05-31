@@ -58,10 +58,31 @@ export default function SuggestedNextExercisesCard() {
                     new Date(suggestions.basedOn.mostRecentWorkoutDay),
                     "MMM d, yyyy"
                   )}
+                  {suggestions.basedOn.mostRecentDominantCategory && (
+                    <span
+                      className={`ml-1.5 inline-block rounded-full px-1.5 py-0 text-[10px] leading-normal font-medium ${CATEGORY_COLORS[suggestions.basedOn.mostRecentDominantCategory] ?? "bg-muted text-muted-foreground"}`}
+                    >
+                      {suggestions.basedOn.mostRecentDominantCategory}
+                    </span>
+                  )}
                 </p>
               ) : (
                 <p>No recent workout day found.</p>
               )}
+              {suggestions.basedOn.dueCategories &&
+                suggestions.basedOn.dueCategories.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px]">Due for rotation:</span>
+                    {suggestions.basedOn.dueCategories.map((cat) => (
+                      <span
+                        key={cat}
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${CATEGORY_COLORS[cat] ?? "bg-muted text-muted-foreground"}`}
+                      >
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                )}
               {suggestions.window && (
                 <div className="flex flex-wrap gap-1">
                   {Object.entries(suggestions.window.categoryBreakdown)

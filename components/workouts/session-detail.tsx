@@ -197,6 +197,7 @@ export default function SessionDetail({
   const muscleGroups = useQuery(api.muscleGroups.list, {})
   const suggestions = useQuery(api.workoutSessions.suggestNextExercises, {
     limit: 6,
+    excludeFromSessionId: sessionId,
   })
 
   const boundSubmit = async (
@@ -435,9 +436,18 @@ export default function SessionDetail({
           suggestions &&
           suggestions.recommendations.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">
-                Suggested for today
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Suggested for today
+                </p>
+                {suggestions.basedOn.dueCategories &&
+                  suggestions.basedOn.dueCategories.length > 0 && (
+                    <span className="text-[10px] text-muted-foreground/70">
+                      {suggestions.basedOn.dueCategories.join(" · ")} in
+                      rotation
+                    </span>
+                  )}
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {suggestions.recommendations.map((item) => (
                   <button
@@ -492,8 +502,8 @@ export default function SessionDetail({
                 <FieldError>{errors.exerciseId?.message}</FieldError>
               </Field>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
-              {isCardioExercise ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
+                {isCardioExercise ? (
                   <>
                     <Field>
                       <FieldLabel htmlFor="session-exercise-dur">
@@ -1140,7 +1150,7 @@ function SessionExerciseItem({
                         id={`set-dur-${sessionExercise._id}`}
                         min={0}
                         placeholder="1800"
-                        className="h-11 md:h-10 text-base md:text-sm"
+                        className="h-11 text-base md:h-10 md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("durationSeconds")}
                       />
@@ -1157,7 +1167,7 @@ function SessionExerciseItem({
                         min={0}
                         step={0.1}
                         placeholder="5.0"
-                        className="h-11 md:h-10 text-base md:text-sm"
+                        className="h-11 text-base md:h-10 md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("distance")}
                       />
@@ -1174,7 +1184,7 @@ function SessionExerciseItem({
                         min={1}
                         max={10}
                         placeholder="7"
-                        className="h-11 md:h-10 text-base md:text-sm"
+                        className="h-11 text-base md:h-10 md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("effortLevel")}
                       />
@@ -1194,7 +1204,7 @@ function SessionExerciseItem({
                         id={`set-reps-${sessionExercise._id}`}
                         min={1}
                         placeholder="10"
-                        className="h-11 md:h-10 text-base md:text-sm"
+                        className="h-11 text-base md:h-10 md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("reps")}
                       />
@@ -1212,7 +1222,7 @@ function SessionExerciseItem({
                         min={0}
                         step={0.5}
                         placeholder="60"
-                        className="h-11 md:h-10 text-base md:text-sm"
+                        className="h-11 text-base md:h-10 md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("weight")}
                       />
@@ -1230,7 +1240,7 @@ function SessionExerciseItem({
                         min={1}
                         max={10}
                         placeholder="7"
-                        className="h-11 md:h-10 text-base md:text-sm"
+                        className="h-11 text-base md:h-10 md:text-sm"
                         disabled={isSetPending}
                         {...registerSet("effortLevel")}
                       />
@@ -1254,7 +1264,7 @@ function SessionExerciseItem({
                       min={0}
                       max={20}
                       placeholder="2"
-                      className="h-11 md:h-10 text-base md:text-sm"
+                      className="h-11 text-base md:h-10 md:text-sm"
                       disabled={isSetPending}
                       {...registerSet("rir")}
                     />
@@ -1270,7 +1280,7 @@ function SessionExerciseItem({
                       id={`set-dur-${sessionExercise._id}`}
                       min={0}
                       placeholder="60"
-                      className="h-11 md:h-10 text-base md:text-sm"
+                      className="h-11 text-base md:h-10 md:text-sm"
                       disabled={isSetPending}
                       {...registerSet("durationSeconds")}
                     />
@@ -1287,7 +1297,7 @@ function SessionExerciseItem({
                       min={0}
                       step={0.1}
                       placeholder="5.0"
-                      className="h-11 md:h-10 text-base md:text-sm"
+                      className="h-11 text-base md:h-10 md:text-sm"
                       disabled={isSetPending}
                       {...registerSet("distance")}
                     />
@@ -1308,7 +1318,7 @@ function SessionExerciseItem({
                     min={0}
                     step={5}
                     placeholder="90"
-                    className="h-11 md:h-10 w-32 md:w-24 text-base md:text-sm"
+                    className="h-11 w-32 text-base md:h-10 md:w-24 md:text-sm"
                     disabled={isSetPending}
                     {...registerSet("restSeconds")}
                   />

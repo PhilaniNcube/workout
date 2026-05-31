@@ -39,7 +39,10 @@ export const listByDateRange = query({
 })
 
 export const suggestNextExercises = query({
-  args: { limit: v.optional(v.number()) },
+  args: {
+    limit: v.optional(v.number()),
+    excludeFromSessionId: v.optional(v.id("workoutSessions")),
+  },
   handler: async (ctx, args) => {
     const tokenIdentifier = await requireTokenIdentifier(ctx)
     const limit = Math.min(Math.max(args.limit ?? 6, 1), 20)
@@ -47,6 +50,21 @@ export const suggestNextExercises = query({
     const now = Date.now()
     const WINDOW_DAYS = 14
     const windowStart = now - WINDOW_DAYS * 24 * 60 * 60 * 1000
+
+    const activeSessionExerciseIds = new Set<string>()
+    if (args.excludeFromSessionId) {
+      const activeEntries = await ctx.db
+        .query("workoutSessionExercises")
+        .withIndex("by_ownerTokenIdentifier_and_workoutSessionId", (q) =>
+          q
+            .eq("ownerTokenIdentifier", tokenIdentifier)
+            .eq("workoutSessionId", args.excludeFromSessionId!)
+        )
+        .take(200)
+      for (const entry of activeEntries) {
+        activeSessionExerciseIds.add(String(entry.exerciseId))
+      }
+    }
 
     const allSessions = await ctx.db
       .query("workoutSessions")
@@ -85,11 +103,14 @@ export const suggestNextExercises = query({
     const mostRecentDayMuscleGroups = new Set<string>()
     const previousDayMuscleGroups = new Set<string>()
     const muscleGroupLastTrainedDay = new Map<string, string>()
-    const categoryDays = new Set<string>() // unique "category|dayKey" pairs
+    const categoryDays = new Set<string>()
     const regionDays = new Set<string>()
     const recentExerciseIds = new Set<string>()
     const exerciseCache = new Map<string, Doc<"exercises"> | null>()
     const muscleGroupCache = new Map<string, Doc<"muscleGroups"> | null>()
+
+    const dayCategoryCounts = new Map<string, Map<string, number>>()
+    const lastCategoryDay = new Map<string, string>()
 
     for (const session of allSessions) {
       const sessionDay = dayKeyFor(session.startedAt)
@@ -139,10 +160,63 @@ export const suggestNextExercises = query({
 
         if (category) {
           categoryDays.add(`${category}|${sessionDay}`)
+          if (!dayCategoryCounts.has(sessionDay)) {
+            dayCategoryCounts.set(sessionDay, new Map())
+          }
+          const counts = dayCategoryCounts.get(sessionDay)!
+          counts.set(category, (counts.get(category) ?? 0) + 1)
+          const existing = lastCategoryDay.get(category)
+          if (!existing || sessionDay > existing) {
+            lastCategoryDay.set(category, sessionDay)
+          }
         }
         if (region) {
           regionDays.add(`${region}|${sessionDay}`)
         }
+      }
+    }
+
+    const PPL_CATEGORIES = ["push", "pull", "legs", "core", "cardio", "full"]
+    const categoryDueRank = new Map<string, number>()
+    for (const cat of PPL_CATEGORIES) {
+      const lastDay = lastCategoryDay.get(cat)
+      if (lastDay) {
+        categoryDueRank.set(cat, daysSince(lastDay))
+      } else {
+        categoryDueRank.set(cat, WINDOW_DAYS + 1)
+      }
+    }
+
+    const REST_DAYS = 1
+    const dueCategories = new Set<string>()
+    for (const cat of PPL_CATEGORIES) {
+      const due = categoryDueRank.get(cat) ?? WINDOW_DAYS + 1
+      if (due > REST_DAYS) {
+        dueCategories.add(cat)
+      }
+    }
+    if (dueCategories.size === 0) {
+      for (const cat of PPL_CATEGORIES) {
+        dueCategories.add(cat)
+      }
+    }
+
+    let mostRecentDayDominantCategory: string | null = null
+    if (mostRecentDay && dayCategoryCounts.has(mostRecentDay)) {
+      const counts = dayCategoryCounts.get(mostRecentDay)!
+      let maxCount = 0
+      for (const [cat, count] of counts) {
+        if (count > maxCount) {
+          maxCount = count
+          mostRecentDayDominantCategory = cat
+        }
+      }
+    }
+
+    const mostRecentDayCategories = new Set<string>()
+    if (mostRecentDay && dayCategoryCounts.has(mostRecentDay)) {
+      for (const cat of dayCategoryCounts.get(mostRecentDay)!.keys()) {
+        mostRecentDayCategories.add(cat)
       }
     }
 
@@ -201,6 +275,7 @@ export const suggestNextExercises = query({
 
     for (const exercise of allExercises) {
       if (!exercise.muscleGroup) continue
+      if (activeSessionExerciseIds.has(String(exercise._id))) continue
 
       const groupId = String(exercise.muscleGroup)
       if (mostRecentDayMuscleGroups.has(groupId)) continue
@@ -224,8 +299,8 @@ export const suggestNextExercises = query({
           score += 4
         }
       } else {
-        score += 10
-        reasons.push("Never trained before")
+        score += 4
+        reasons.push("New exercise to try")
       }
 
       let mg = muscleGroupCache.get(groupId)
@@ -236,19 +311,33 @@ export const suggestNextExercises = query({
       const category = mg?.category ?? null
       const region = mg?.region ?? null
 
+      if (category && dueCategories.has(category)) {
+        score += 25
+        const due = categoryDueRank.get(category) ?? WINDOW_DAYS + 1
+        if (due >= 3) {
+          reasons.push(`${category} is overdue in rotation`)
+        } else {
+          reasons.push(`${category} is due in rotation`)
+        }
+      }
+
+      if (category && mostRecentDayCategories.has(category)) {
+        score -= 12
+      }
+
       if (category && totalTrainingDays >= 2) {
         const catDays = totalCategoryDays.get(category) ?? 0
         const ratio = maxCatDays > 0 ? catDays / maxCatDays : 0
         if (ratio < 0.15) {
-          score += 10
-          reasons.push(`${category} category needs work`)
+          score += 20
+          reasons.push(`${category} category is under-trained`)
         } else if (ratio < 0.25) {
-          score += 6
-          reasons.push(`${category} category could use focus`)
+          score += 10
+          reasons.push(`${category} category needs focus`)
         } else if (ratio < 0.33) {
-          score += 2
+          score += 4
         } else if (ratio > 0.55) {
-          score -= 5
+          score -= 10
         }
       }
 
@@ -256,23 +345,22 @@ export const suggestNextExercises = query({
         const regDays = totalRegionDays.get(region) ?? 0
         const ratio = maxRegDays > 0 ? regDays / maxRegDays : 0
         if (ratio < 0.15) {
-          score += 8
+          score += 12
           reasons.push(`${region} body needs attention`)
         } else if (ratio < 0.25) {
-          score += 4
+          score += 6
         } else if (ratio > 0.55) {
-          score -= 5
+          score -= 8
         }
       }
 
       if (preferredMuscleGroups.has(groupId)) {
-        score += 10
+        score += 8
         reasons.push("Due in rotation from your last workout")
       }
 
       if (!recentExerciseIds.has(String(exercise._id))) {
-        score += 5
-        reasons.push("Good variety pick")
+        score += 2
       }
 
       if (exercise.isCompound) {
@@ -320,6 +408,8 @@ export const suggestNextExercises = query({
       basedOn: {
         mostRecentWorkoutDay: mostRecentDay,
         previousWorkoutDay: previousDay,
+        mostRecentDominantCategory: mostRecentDayDominantCategory,
+        dueCategories: Array.from(dueCategories),
       },
       window: windowInfo,
       blockedMuscleGroups: blockedMuscleGroupNames,
